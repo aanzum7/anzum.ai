@@ -1,0 +1,1 @@
+web: streamlit run aanzum.py --server.port=$PORT
