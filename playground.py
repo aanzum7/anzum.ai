@@ -2,6 +2,7 @@ import streamlit as st
 from difflib import SequenceMatcher
 import google.generativeai as genai  # type: ignore
 import langdetect  # type: ignore
+import toml
 
 
 class AnzumAIFAQ:
@@ -10,30 +11,57 @@ class AnzumAIFAQ:
         self.personal_context = self.load_personal_context()
 
     def load_faq_data(self):
-        """Load FAQ data from Streamlit secrets."""
+        """Load FAQ data from .streamlit/secrets.toml."""
         try:
-            faq_data = st.secrets["faq_data"]
-            return {q: a for q, a in (line.split("::") for line in faq_data.splitlines())}
+            secrets = toml.load(".streamlit/secrets.toml")
+            # Return the list of FAQ question-answer pairs
+            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
         except Exception as e:
-            raise ValueError(f"Error loading FAQ data from secrets: {e}")
+            raise FileNotFoundError(f"Error loading FAQ data: {e}")
 
     def load_personal_context(self):
-        """Load personal context from Streamlit secrets."""
+        """Load personal context from .streamlit/secrets.toml."""
         try:
-            return st.secrets["personal_context"]
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['personal']['data']
         except Exception as e:
-            raise ValueError(f"Error loading personal context from secrets: {e}")
+            raise FileNotFoundError(f"Error loading personal context: {e}")
 
     def get_faq_data(self):
-        """Returns all FAQ data."""
+        """Returns FAQ data as a dictionary."""
         return self.faq_data
 
 
 class TanvirAnzumAI:
     def __init__(self):
-        self.faq_data = st.secrets["faq_data"]
-        self.personal_context = st.secrets["personal_context"]
-        self.api_key = st.secrets["genAI_api_key"]
+        self.faq_data = self.load_faq_data()
+        self.personal_context = self.load_personal_context()
+        self.api_key = self.load_api_key()
+
+    def load_faq_data(self):
+        """Load FAQ data from .streamlit/secrets.toml."""
+        try:
+            secrets = toml.load(".streamlit/secrets.toml")
+            # Return the list of FAQ question-answer pairs
+            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
+        except Exception as e:
+            raise FileNotFoundError(f"Error loading FAQ data: {e}")
+
+    def load_personal_context(self):
+        """Load personal context from .streamlit/secrets.toml."""
+        try:
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['personal']['data']
+        except Exception as e:
+            raise FileNotFoundError(f"Error loading personal context: {e}")
+
+    def load_api_key(self):
+        """Load Gemini API key from .streamlit/secrets.toml."""
+        try:
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['genai']['api_key']
+        except Exception as e:
+            raise FileNotFoundError(f"Error loading API key: {e}")
 
     def generate_answer(self, user_input):
         """Generate AI response using Gemini AI based on user input and context."""
@@ -145,7 +173,7 @@ def run_streamlit_app():
     selected_faq = st.sidebar.selectbox("Select a FAQ question:", [""] + filtered_faq, index=1 if filtered_faq else 0)
 
     if selected_faq:
-        st.sidebar.write(f"**Anzum.ai:** {faq_data[selected_faq]}")
+        st.sidebar.write(f"**Answer:** {faq_data[selected_faq]}")
 
     # Chatbot
     st.header("Chat with the Anzum.AI Assistant")

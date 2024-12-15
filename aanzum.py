@@ -2,70 +2,64 @@ import streamlit as st
 from difflib import SequenceMatcher
 import google.generativeai as genai  # type: ignore
 import langdetect  # type: ignore
+import toml
 
 
 class AnzumAIFAQ:
     def __init__(self):
-        self.faq_data = self.load_faq_data("assets/faq_data.txt")
-        self.personal_context = self.load_personal_context("assets/personal_context.txt")
+        self.faq_data = self.load_faq_data()
+        self.personal_context = self.load_personal_context()
 
-    def load_faq_data(self, file_path):
-        """Load FAQ data from a file and return it as a dictionary."""
-        faq_data = {}
+    def load_faq_data(self):
+        """Load FAQ data from .streamlit/secrets.toml."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                question = None
-                for line in lines:
-                    line = line.strip()
-                    if line.endswith('?'):
-                        question = line
-                    elif line:
-                        faq_data[question] = line
-            return faq_data
+            secrets = toml.load(".streamlit/secrets.toml")
+            # Return the list of FAQ question-answer pairs
+            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
         except Exception as e:
             raise FileNotFoundError(f"Error loading FAQ data: {e}")
 
-    def load_personal_context(self, file_path):
-        """Load personal context from a file."""
+    def load_personal_context(self):
+        """Load personal context from .streamlit/secrets.toml."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['personal']['data']
         except Exception as e:
             raise FileNotFoundError(f"Error loading personal context: {e}")
 
     def get_faq_data(self):
-        """Returns all FAQ data."""
+        """Returns FAQ data as a dictionary."""
         return self.faq_data
 
 
 class TanvirAnzumAI:
     def __init__(self):
-        self.faq_data = self.load_faq_data("assets/faq_data.txt")
-        self.personal_context = self.load_personal_context("assets/personal_context.txt")
-        self.api_key = self.load_api_key("config/genAI.txt")
+        self.faq_data = self.load_faq_data()
+        self.personal_context = self.load_personal_context()
+        self.api_key = self.load_api_key()
 
-    def load_faq_data(self, file_path):
-        """Load FAQ data from a text file."""
+    def load_faq_data(self):
+        """Load FAQ data from .streamlit/secrets.toml."""
         try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
+            secrets = toml.load(".streamlit/secrets.toml")
+            # Return the list of FAQ question-answer pairs
+            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
         except Exception as e:
             raise FileNotFoundError(f"Error loading FAQ data: {e}")
 
-    def load_personal_context(self, file_path):
-        """Load personal context from a text file."""
+    def load_personal_context(self):
+        """Load personal context from .streamlit/secrets.toml."""
         try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['personal']['data']
         except Exception as e:
             raise FileNotFoundError(f"Error loading personal context: {e}")
 
-    def load_api_key(self, file_path):
-        """Load Gemini API key from a text file."""
+    def load_api_key(self):
+        """Load Gemini API key from .streamlit/secrets.toml."""
         try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
+            secrets = toml.load(".streamlit/secrets.toml")
+            return secrets['genai']['api_key']
         except Exception as e:
             raise FileNotFoundError(f"Error loading API key: {e}")
 
@@ -140,7 +134,7 @@ class AnzumAIChatbot:
                 most_similar_question = question
 
         # If there's a good match, return the FAQ response
-        if highest_similarity > 0.5:  # Adjusted threshold for more flexibility
+        if highest_similarity > 0.6:  # Adjusted threshold for more flexibility
             response = (
                 f"I found this FAQ answer that might help you: '{most_similar_question}'\n\n"
                 f"{self.faq_context[most_similar_question]}"
