@@ -176,7 +176,7 @@ def run_streamlit_app():
         st.sidebar.write(f"**anzum.ai:** {faq_data[selected_faq]}")
 
     # Chatbot
-    st.header("Chat with Tanvir.AI")
+    st.header("Chat with anzum.ai")
 
     # Clear chat functionality
     if st.button("Clear Chat"):
@@ -200,7 +200,7 @@ def run_streamlit_app():
     # Display chat history (latest message at the top)
     for user_msg, bot_msg in reversed(st.session_state.chat_history):
         st.write(f"**You:** {user_msg}")
-        st.write(f"**Tanvir.AI:** {bot_msg}")
+        st.write(f"**anzum.ai:** {bot_msg}")
 
     st.write("**Tip**: Use the FAQ section in the sidebar for quick answers!")
 
