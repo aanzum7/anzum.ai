@@ -6,33 +6,23 @@ import langdetect  # type: ignore
 
 class AnzumAIFAQ:
     def __init__(self):
-        self.faq_data = self.load_faq_data("assets/faq_data.txt")
-        self.personal_context = self.load_personal_context("assets/personal_context.txt")
+        self.faq_data = self.load_faq_data()
+        self.personal_context = self.load_personal_context()
 
-    def load_faq_data(self, file_path):
-        """Load FAQ data from a file and return it as a dictionary."""
-        faq_data = {}
+    def load_faq_data(self):
+        """Load FAQ data from Streamlit secrets."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                question = None
-                for line in lines:
-                    line = line.strip()
-                    if line.endswith('?'):
-                        question = line
-                    elif line:
-                        faq_data[question] = line
-            return faq_data
+            faq_data = st.secrets["faq_data"]
+            return {q: a for q, a in (line.split("::") for line in faq_data.splitlines())}
         except Exception as e:
-            raise FileNotFoundError(f"Error loading FAQ data: {e}")
+            raise ValueError(f"Error loading FAQ data from secrets: {e}")
 
-    def load_personal_context(self, file_path):
-        """Load personal context from a file."""
+    def load_personal_context(self):
+        """Load personal context from Streamlit secrets."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read().strip()
+            return st.secrets["personal_context"]
         except Exception as e:
-            raise FileNotFoundError(f"Error loading personal context: {e}")
+            raise ValueError(f"Error loading personal context from secrets: {e}")
 
     def get_faq_data(self):
         """Returns all FAQ data."""
@@ -41,33 +31,9 @@ class AnzumAIFAQ:
 
 class TanvirAnzumAI:
     def __init__(self):
-        self.faq_data = self.load_faq_data("assets/faq_data.txt")
-        self.personal_context = self.load_personal_context("assets/personal_context.txt")
-        self.api_key = self.load_api_key("config/genAI.txt")
-
-    def load_faq_data(self, file_path):
-        """Load FAQ data from a text file."""
-        try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading FAQ data: {e}")
-
-    def load_personal_context(self, file_path):
-        """Load personal context from a text file."""
-        try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading personal context: {e}")
-
-    def load_api_key(self, file_path):
-        """Load Gemini API key from a text file."""
-        try:
-            with open(file_path, "r") as file:
-                return file.read().strip()
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading API key: {e}")
+        self.faq_data = st.secrets["faq_data"]
+        self.personal_context = st.secrets["personal_context"]
+        self.api_key = st.secrets["genAI_api_key"]
 
     def generate_answer(self, user_input):
         """Generate AI response using Gemini AI based on user input and context."""
@@ -179,7 +145,7 @@ def run_streamlit_app():
     selected_faq = st.sidebar.selectbox("Select a FAQ question:", [""] + filtered_faq, index=1 if filtered_faq else 0)
 
     if selected_faq:
-        st.sidebar.write(f"**Answer:** {faq_data[selected_faq]}")
+        st.sidebar.write(f"**Anzum.ai:** {faq_data[selected_faq]}")
 
     # Chatbot
     st.header("Chat with the Anzum.AI Assistant")
