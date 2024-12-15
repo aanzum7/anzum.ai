@@ -134,7 +134,7 @@ class AnzumAIChatbot:
                 most_similar_question = question
 
         # If there's a good match, return the FAQ response
-        if highest_similarity > 0.7:  # Adjusted threshold for more flexibility
+        if highest_similarity > 0.65:  # Adjusted threshold for more flexibility
             response = (
                 f"I found this FAQ answer that might help you: '{most_similar_question}'\n\n"
                 f"{self.faq_context[most_similar_question]}"
