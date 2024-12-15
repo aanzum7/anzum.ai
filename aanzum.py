@@ -150,8 +150,8 @@ class AnzumAIChatbot:
 
 # Streamlit UI
 def run_streamlit_app():
-    st.title("Anzum.AI - Tanvir Anzum’s AI Assistant")
-    st.write("Welcome! You can explore FAQs or chat with the AI assistant. Feel free to ask any questions.")
+    st.title("anzum.ai - Personalized Assistant")
+    st.write( "Welcome to anzum.ai, the AI version of Tanvir Anzum. I'm here to share insights about my work, projects, and journey. Feel free to ask me anything!")
 
     # Initialize session state
     if "chat_history" not in st.session_state:
@@ -173,16 +173,16 @@ def run_streamlit_app():
     selected_faq = st.sidebar.selectbox("Select a FAQ question:", [""] + filtered_faq, index=1 if filtered_faq else 0)
 
     if selected_faq:
-        st.sidebar.write(f"**Answer:** {faq_data[selected_faq]}")
+        st.sidebar.write(f"**anzum.ai:** {faq_data[selected_faq]}")
 
     # Chatbot
-    st.header("Chat with the Anzum.AI Assistant")
+    st.header("Chat with Tanvir.AI")
 
     # Clear chat functionality
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
 
-    # Chat interface
+    # Chat interface with Enter key submission
     def submit_query():
         if st.session_state.user_query:
             # Generate chatbot response
@@ -194,17 +194,13 @@ def run_streamlit_app():
             # Clear input field
             st.session_state.user_query = ""
 
-    # Text input with Enter key submission
+    # Text input with automatic submission on Enter
     user_query = st.text_input("Your message:", key="user_query", on_change=submit_query)
 
-    # Submit button for manual submission
-    if st.button("Submit"):
-        submit_query()
-
-    # Display chat history (show the latest message at the top)
+    # Display chat history (latest message at the top)
     for user_msg, bot_msg in reversed(st.session_state.chat_history):
         st.write(f"**You:** {user_msg}")
-        st.write(f"**Anzum.AI:** {bot_msg}")
+        st.write(f"**Tanvir.AI:** {bot_msg}")
 
     st.write("**Tip**: Use the FAQ section in the sidebar for quick answers!")
 
