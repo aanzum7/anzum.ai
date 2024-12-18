@@ -95,9 +95,9 @@ class TanvirAnzumAI:
             prompt = (
                 f"Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
                 f"FAQ Context: {context}\nUser Input: {user_input}\n\n"
-                "Act as an AI version of Tanvir Anzum and generate a response as if you were him. "
-                "Provide a detailed, professional answer in the same language as the user input, "
-                "preserving the context of the question and profile."
+                "Act as an AI version of Tanvir Anzum and respond in a simple, short, and conversational way, "
+                "like a human chat, while maintaining professionalism and context. "
+                "If relevant, feel free to include additional links from Tanvir's work or projects."
             )
 
             # Send the prompt to the model
