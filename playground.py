@@ -95,9 +95,9 @@ class TanvirAnzumAI:
             prompt = (
                 f"Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
                 f"FAQ Context: {context}\nUser Input: {user_input}\n\n"
-                "Act as an AI version of Tanvir Anzum and generate a response as if you were him. "
-                "Provide a detailed, professional answer in the same language as the user input, "
-                "preserving the context of the question and profile."
+                "Act as an AI version of Tanvir Anzum and respond in a simple, short, and conversational way, "
+                "like a human chat, while maintaining professionalism and context. "
+                "If relevant, feel free to include additional links from Tanvir's work or projects."
             )
 
             # Send the prompt to the model
@@ -151,7 +151,8 @@ class AnzumAIChatbot:
 # Streamlit UI
 def run_streamlit_app():
     st.title("anzum.ai - Personalized Assistant")
-    st.write( "Welcome to anzum.ai, the AI version of Tanvir Anzum. I'm here to share insights about my work, projects, and journey. Feel free to ask me anything!")
+    st.write(
+        "Welcome to anzum.ai, the AI version of Tanvir Anzum. I'm here to share insights about my work, projects, and journey. Feel free to ask me anything!")
 
     # Initialize session state
     if "chat_history" not in st.session_state:
@@ -200,7 +201,7 @@ def run_streamlit_app():
     # Display chat history (latest message at the top)
     for user_msg, bot_msg in reversed(st.session_state.chat_history):
         st.write(f"**You:** {user_msg}")
-        st.write(f"**anzum.aic:** {bot_msg}")
+        st.write(f"**anzum.ai:** {bot_msg}")
 
     st.write("**Tip**: Use the FAQ section in the sidebar for quick answers!")
 
