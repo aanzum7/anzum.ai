@@ -1,8 +1,8 @@
-import streamlit as st
+import streamlit as st # type: ignore
 from difflib import SequenceMatcher
 import google.generativeai as genai  # type: ignore
 import langdetect  # type: ignore
-import toml
+import toml # type: ignore
 
 
 class AnzumAIFAQ:
