@@ -1,209 +1,157 @@
-import streamlit as st
+import streamlit as st  # type: ignore
 from difflib import SequenceMatcher
 import google.generativeai as genai  # type: ignore
 import langdetect  # type: ignore
-import toml
+import toml  # type: ignore
 
+class AgenticAI:
+    """A class to manage context-driven AI responses using Agentic capabilities."""
+    def __init__(self, api_key, context):
+        self.api_key = api_key
+        self.context = context
+        self.configure_ai()
 
-class AnzumAIFAQ:
-    def __init__(self):
-        self.faq_data = self.load_faq_data()
-        self.personal_context = self.load_personal_context()
-
-    def load_faq_data(self):
-        """Load FAQ data from .streamlit/secrets.toml."""
-        try:
-            secrets = toml.load(".streamlit/secrets.toml")
-            # Return the list of FAQ question-answer pairs
-            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading FAQ data: {e}")
-
-    def load_personal_context(self):
-        """Load personal context from .streamlit/secrets.toml."""
-        try:
-            secrets = toml.load(".streamlit/secrets.toml")
-            return secrets['personal']['data']
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading personal context: {e}")
-
-    def get_faq_data(self):
-        """Returns FAQ data as a dictionary."""
-        return self.faq_data
-
-
-class TanvirAnzumAI:
-    def __init__(self):
-        self.faq_data = self.load_faq_data()
-        self.personal_context = self.load_personal_context()
-        self.api_key = self.load_api_key()
-
-    def load_faq_data(self):
-        """Load FAQ data from .streamlit/secrets.toml."""
-        try:
-            secrets = toml.load(".streamlit/secrets.toml")
-            # Return the list of FAQ question-answer pairs
-            return {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading FAQ data: {e}")
-
-    def load_personal_context(self):
-        """Load personal context from .streamlit/secrets.toml."""
-        try:
-            secrets = toml.load(".streamlit/secrets.toml")
-            return secrets['personal']['data']
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading personal context: {e}")
-
-    def load_api_key(self):
-        """Load Gemini API key from .streamlit/secrets.toml."""
-        try:
-            secrets = toml.load(".streamlit/secrets.toml")
-            return secrets['genai']['api_key']
-        except Exception as e:
-            raise FileNotFoundError(f"Error loading API key: {e}")
-
-    def generate_answer(self, user_input):
-        """Generate AI response using Gemini AI based on user input and context."""
-        try:
-            # Combine FAQ context and personal context
-            context = f"FAQ Context: {self.faq_data}\nPersonal Context: {self.personal_context}"
-
-            # Detect the language of the user input
-            language = langdetect.detect(user_input)
-
-            # Configure Generative AI with the API key
-            genai.configure(api_key=self.api_key)
-
-            # Set generation parameters
-            generation_config = {
-                "temperature": 0.5,  # Lower temperature for factual consistency
+    def configure_ai(self):
+        """Configure the AI model."""
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config={
+                "temperature": 0.5,
                 "top_p": 0.9,
-                "max_output_tokens": 512,  # Enough space for detailed content
-            }
+                "max_output_tokens": 512,
+            },
+        )
+        self.chat_session = self.model.start_chat()
 
-            # Create the model
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",  # Or your preferred model
-                generation_config=generation_config
-            )
-
-            # Start a new chat session for each request
-            chat_session = model.start_chat()
-
-            # Construct the enhanced prompt
+    def generate_response(self, user_input):
+        """Generate a conversational response based on the provided user input."""
+        try:
             prompt = (
-                f"Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
-                f"FAQ Context: {context}\nUser Input: {user_input}\n\n"
-                "Act as an AI version of Tanvir Anzum and respond in a simple, short, and conversational way, "
-                "like a human chat, while maintaining professionalism and context. "
-                "If relevant, feel free to include additional links from Tanvir's work or projects."
+                f"FAQ Context: {self.context['faq']}\n"
+                f"Personal Context: {self.context['personal']}\n"
+                f"User Input: {user_input}\n\n"
+                "Act as an AI assistant, responding simply, conversationally, and professionally."
             )
-
-            # Send the prompt to the model
-            response = chat_session.send_message(prompt)
-
-            if response and response.text:
-                # Return the generated response
-                return response.text.strip(), None
-            else:
-                return None, "No response generated."
-
+            response = self.chat_session.send_message(prompt)
+            return response.text.strip() if response and response.text else "I'm sorry, I couldn't generate a response."
         except Exception as e:
-            return None, f"Error generating response: {e}"
+            return f"Error: {e}"
 
+class FAQHandler:
+    """Handles FAQ retrieval and matching based on user input."""
+    def __init__(self, faq_data):
+        self.faq_data = faq_data
 
-class AnzumAIChatbot:
-    def __init__(self, faq_context, tanvir_ai):
-        self.context = []
-        self.faq_context = faq_context
-        self.tanvir_ai = tanvir_ai
-
-    def handle_chatbot_response(self, user_query):
-        """
-        Generates a chatbot response by finding the most similar FAQ question and using context.
-        The chatbot will return an FAQ reference if relevant, or fall back to AI-generated answers.
-        """
+    def find_similar_question(self, user_input, threshold=0.65):
+        """Find the most similar FAQ question to the user input."""
         most_similar_question = None
         highest_similarity = 0
 
-        for question in self.faq_context.keys():
-            similarity = SequenceMatcher(None, user_query.lower(), question.lower()).ratio()
+        for question in self.faq_data.keys():
+            similarity = SequenceMatcher(None, user_input.lower(), question.lower()).ratio()
             if similarity > highest_similarity:
                 highest_similarity = similarity
                 most_similar_question = question
 
-        # If there's a good match, return the FAQ response
-        if highest_similarity > 0.65:  # Adjusted threshold for more flexibility
-            response = (
-                f"I found this FAQ answer that might help you: '{most_similar_question}'\n\n"
-                f"{self.faq_context[most_similar_question]}"
+        if highest_similarity >= threshold:
+            return most_similar_question, self.faq_data[most_similar_question]
+        return None, None
+
+class AnzumAIApp:
+    """Main application logic for anzum.ai."""
+    def __init__(self):
+        self.faq_data, self.personal_context, self.api_key = self.load_configuration()
+        self.faq_handler = FAQHandler(self.faq_data)
+        self.agentic_ai = AgenticAI(
+            api_key=self.api_key, 
+            context={"faq": self.faq_data, "personal": self.personal_context}
+        )
+
+    def load_configuration(self):
+        """Load configuration from secrets."""
+        try:
+            secrets = toml.load(".streamlit/secrets.toml")
+            faq_data = {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
+            personal_context = secrets['personal']['data']
+            api_key = secrets['genai']['api_key']
+            return faq_data, personal_context, api_key
+        except Exception as e:
+            raise FileNotFoundError(f"Error loading configuration: {e}")
+
+    def process_user_query(self, user_query):
+        """Process user input and provide an appropriate response."""
+        faq_question, faq_answer = self.faq_handler.find_similar_question(user_query)
+        if faq_answer:
+            return f"FAQ Match: '{faq_question}'\n\n{faq_answer}"
+        return self.agentic_ai.generate_response(user_query)
+
+    def run(self):
+        # Main section
+        st.title("Hey, I'm **anzum.ai**! 💥")
+        st.write(
+            "I'm the AI clone of **Tanvir Anzum**, here to share my work, journey, and aspirations. Let’s get started! 🌟"
+        )
+
+        # Sidebar for FAQ
+        # Sidebar for FAQ
+        st.sidebar.title("FAQs")
+
+        # Search box for FAQ filtering
+        search_query = st.sidebar.text_input("Search FAQs:")
+
+        # Filter FAQ list dynamically based on search query
+        filtered_faqs = [q for q in self.faq_data if search_query.lower() in q.lower()] if search_query else list(self.faq_data.keys())
+
+        # Dropdown for filtered FAQs, defaulting to the first matching result
+        if filtered_faqs:
+            selected_faq = st.sidebar.selectbox(
+                "Explore what’s on the minds of other professionals:",
+                filtered_faqs,
+                index=0  # Default to the first matching FAQ
             )
-            return response
 
-        # Otherwise, use Gemini AI to generate a response
-        ai_answer, error = self.tanvir_ai.generate_answer(user_query)
-        if error:
-            return f"Error: {error}"
-        return ai_answer
+            # Display the content for the selected FAQ
+            st.sidebar.markdown(f"### {selected_faq}")
+            st.sidebar.write(f"**Answer:** {self.faq_data[selected_faq]}")
+        else:
+            # Placeholder message when no FAQs are found
+            st.sidebar.write("No matching FAQs found. Try another search.")
 
+            
+        # Chat interface
+        st.header("Chat with anzum.ai")
 
-# Streamlit UI
-def run_streamlit_app():
-    st.title("anzum.ai - Personalized Assistant")
-    st.write( "Welcome to anzum.ai, the AI version of Tanvir Anzum. I'm here to share insights about my work, projects, and journey. Feel free to ask me anything!")
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
 
-    # Initialize session state
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+        # Chat interaction
+        def submit_query():
+            if st.session_state.user_query:
+                response = self.process_user_query(st.session_state.user_query)
+                st.session_state.chat_history.append((st.session_state.user_query, response))
+                st.session_state.user_query = ""
 
-    # Initialize TanvirAI and AnzumAIChatbot
-    faq_instance = AnzumAIFAQ()
-    faq_data = faq_instance.get_faq_data()
-    tanvir_ai = TanvirAnzumAI()
-    chatbot_instance = AnzumAIChatbot(faq_context=faq_data, tanvir_ai=tanvir_ai)
+        # Start chat section
+        st.subheader("Start Chat:")
+        user_query = st.text_input("What's on your mind?", key="user_query", on_change=submit_query)
 
-    # Sidebar for FAQ with search feature and default selection
-    st.sidebar.title("FAQ")
-    faq_search = st.sidebar.text_input("Search FAQ questions...")
-    filtered_faq = [faq for faq in faq_data.keys() if faq_search.lower() in faq.lower()] if faq_search else list(
-        faq_data.keys())
+        # Clear chat button
+        if st.button("Clear Chat"):
+            st.session_state.chat_history = []
 
-    # Set the first FAQ as default if available
-    selected_faq = st.sidebar.selectbox("Select a FAQ question:", [""] + filtered_faq, index=1 if filtered_faq else 0)
+        # Display chat history
+        for user_msg, bot_msg in reversed(st.session_state.chat_history):
+            st.markdown(f"**You:** {user_msg}")
+            st.markdown(f"**anzum.ai:** {bot_msg}")
 
-    if selected_faq:
-        st.sidebar.write(f"**anzum.ai:** {faq_data[selected_faq]}")
-
-    # Chatbot
-    st.header("Chat with anzum.ai")
-
-    # Clear chat functionality
-    if st.button("Clear Chat"):
-        st.session_state.chat_history = []
-
-    # Chat interface with Enter key submission
-    def submit_query():
-        if st.session_state.user_query:
-            # Generate chatbot response
-            bot_response = chatbot_instance.handle_chatbot_response(st.session_state.user_query)
-
-            # Update chat history
-            st.session_state.chat_history.append((st.session_state.user_query, bot_response))
-
-            # Clear input field
-            st.session_state.user_query = ""
-
-    # Text input with automatic submission on Enter
-    user_query = st.text_input("Your message:", key="user_query", on_change=submit_query)
-
-    # Display chat history (latest message at the top)
-    for user_msg, bot_msg in reversed(st.session_state.chat_history):
-        st.write(f"**You:** {user_msg}")
-        st.write(f"**anzum.ai:** {bot_msg}")
-
-    st.write("**Tip**: Use the FAQ section in the sidebar for quick answers!")
-
-
+        # Footer with different segments
+        st.write("---")
+        st.markdown(
+            """
+            **Tip:** Type keywords in the FAQ search to find relevant answers quickly!  
+            """
+        )
 if __name__ == "__main__":
-    run_streamlit_app()
+    app = AnzumAIApp()
+    app.run()
