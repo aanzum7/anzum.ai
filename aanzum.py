@@ -145,7 +145,7 @@ class AnzumAIApp:
         # Chat interaction
         def submit_query():
             if st.session_state.user_query:
-                with st.spinner("Generating response..."):
+                with st.spinner("Let me craft a thoughtful reply just for you... ✍️"):
                     response = self.process_user_query(st.session_state.user_query)
                     st.session_state.chat_history.append({
                         "user_query": st.session_state.user_query,
