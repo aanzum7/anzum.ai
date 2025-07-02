@@ -27,7 +27,7 @@ class AgenticAI:
         try:
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash",
+                model_name="gemini-2.0-flash",
                 generation_config={
                     "temperature": 0.5,
                     "top_p": 0.9,
@@ -55,10 +55,22 @@ class AgenticAI:
                 "If relevant, include links from Tanvir's work or projects. Add appropriate emojis to make it friendlier."
             )
             response = self.chat_session.send_message(prompt)
-            return response.text.strip() if response and response.text else "🤖 Sorry, I couldn't generate a response."
+            
+            # Check if response and response.text exist and are valid
+            if response and hasattr(response, "text") and response.text:
+                return response.text.strip()
+            else:
+                logger.warning("Received empty or invalid response from API.")
+                # Optionally restart chat session and retry once
+                self.chat_session = self.model.start_chat()
+                response_retry = self.chat_session.send_message(prompt)
+                if response_retry and hasattr(response_retry, "text") and response_retry.text:
+                    return response_retry.text.strip()
+                return "🤖 Sorry, I couldn't generate a response."
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return f"⚠️ Error: {e}"
+
 
 
 # ---------------------------
@@ -266,8 +278,7 @@ class AnzumAIApp:
             if clicked:
                 st.session_state.chat_history = []
                 self.agentic_ai.configure_ai()
-
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.rerun()  # ✅ Use this instead of st.experimental_rerun()
 
 
 # ---------------------------
