@@ -262,7 +262,7 @@ class AnzumAIApp:
                 logger.info(f"Overall Feedback: {feedback}")  
 
             # Start Over button
-            clicked = st.button("🔄 Start Over", use_container_width=True)
+            clicked = st.button("Start Over", use_container_width=True)
             if clicked:
                 st.session_state.chat_history = []
                 self.agentic_ai.configure_ai()
