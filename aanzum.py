@@ -1,28 +1,33 @@
-import streamlit as st # type: ignore
+import streamlit as st
 from difflib import SequenceMatcher
-import google.generativeai as genai # type: ignore
-import langdetect # type: ignore
-import toml # type: ignore
-from typing import Dict, Tuple, Optional
-
-# Configure logging (optional)
+import google.generativeai as genai
+import langdetect
+import toml
+from typing import Dict, Tuple, Optional, List
 import logging
+
+
+# ---------------------------
+# Logging Setup
+# ---------------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------
+# AI Handler
+# ---------------------------
 class AgenticAI:
-    """A class to manage context-driven AI responses using Agentic capabilities."""
     def __init__(self, api_key: str, context: Dict):
         self.api_key = api_key
         self.context = context
         self.configure_ai()
 
     def configure_ai(self):
-        """Configure the AI model."""
         try:
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-2.0-flash",
                 generation_config={
                     "temperature": 0.5,
                     "top_p": 0.9,
@@ -35,157 +40,250 @@ class AgenticAI:
             raise
 
     def generate_response(self, user_input: str) -> str:
-        """Generate a conversational response based on the provided user input."""
         try:
-            # Detect the language of the user input
-            input_language = langdetect.detect(user_input)
+            try:
+                input_language = langdetect.detect(user_input)
+            except langdetect.lang_detect_exception.LangDetectException:
+                input_language = "unknown"
 
-            # Create a prompt that ensures the AI responds as Tanvir Anzum
             prompt = (
                 f"FAQ Context: {self.context['faq']}\n"
                 f"Personal Context: {self.context['personal']}\n"
                 f"User Input: {user_input}\n\n"
                 "Act as if you are Tanvir Anzum himself. Respond simply, conversationally, and professionally. "
-                f"The user's input is in {input_language}, but respond in English while maintaining the style of the input.\n"
-                "If relevant, feel free to include additional links from Tanvir's work or projects or social profiles."
+                f"The user's input is in {input_language}, but respond in English while maintaining the tone of the input.\n"
+                "If relevant, include links from Tanvir's work or projects. Add appropriate emojis to make it friendlier."
             )
             response = self.chat_session.send_message(prompt)
-            return response.text.strip() if response and response.text else "I'm sorry, I couldn't generate a response."
+            
+            # Check if response and response.text exist and are valid
+            if response and hasattr(response, "text") and response.text:
+                return response.text.strip()
+            else:
+                logger.warning("Received empty or invalid response from API.")
+                # Optionally restart chat session and retry once
+                self.chat_session = self.model.start_chat()
+                response_retry = self.chat_session.send_message(prompt)
+                if response_retry and hasattr(response_retry, "text") and response_retry.text:
+                    return response_retry.text.strip()
+                return "🤖 Sorry, I couldn't generate a response."
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return f"Error: {e}"
+            return f"⚠️ Error: {e}"
 
+
+
+# ---------------------------
+# FAQ Handler
+# ---------------------------
 class FAQHandler:
-    """Handles FAQ retrieval and matching based on user input."""
-    def __init__(self, faq_data: Dict):
-        self.faq_data = faq_data
+    def __init__(self, faq_list: List[Dict]):
+        self.faq_list = faq_list
 
     def find_similar_question(self, user_input: str, threshold: float = 0.65) -> Tuple[Optional[str], Optional[str]]:
-        """Find the most similar FAQ question to the user input."""
         most_similar_question = None
         highest_similarity = 0
+        best_answer = None
 
-        for question in self.faq_data.keys():
-            similarity = SequenceMatcher(None, user_input.lower(), question.lower()).ratio()
+        for faq in self.faq_list:
+            similarity = SequenceMatcher(None, user_input.lower(), faq['question'].lower()).ratio()
             if similarity > highest_similarity:
                 highest_similarity = similarity
-                most_similar_question = question
+                most_similar_question = faq['question']
+                best_answer = faq['answer']
 
         if highest_similarity >= threshold:
-            return most_similar_question, self.faq_data[most_similar_question]
+            return most_similar_question, best_answer
         return None, None
 
+
+# ---------------------------
+# Main App
+# ---------------------------
 class AnzumAIApp:
-    """Main application logic for anzum.ai."""
     def __init__(self):
         self.faq_data, self.personal_context, self.api_key = self.load_configuration()
         self.faq_handler = FAQHandler(self.faq_data)
         self.agentic_ai = AgenticAI(
-            api_key=self.api_key, 
+            api_key=self.api_key,
             context={"faq": self.faq_data, "personal": self.personal_context}
         )
 
-    def load_configuration(self) -> Tuple[Dict, Dict, str]:
-        """Load configuration from secrets."""
+    def load_configuration(self) -> Tuple[List[Dict], Dict, str]:
         try:
             secrets = toml.load(".streamlit/secrets.toml")
-            faq_data = {faq['question']: faq['answer'] for faq in secrets['faq']['questions']}
+            faq_data = secrets['faq']['questions']
             personal_context = secrets['personal']['data']
             api_key = secrets['genai']['api_key']
             return faq_data, personal_context, api_key
         except Exception as e:
             logger.error(f"Error loading configuration: {e}")
-            raise FileNotFoundError(f"Error loading configuration: {e}")
+            raise FileNotFoundError(
+                f"Configuration loading failed. Ensure `.streamlit/secrets.toml` is present and correct.\nError: {e}"
+            )
 
     def process_user_query(self, user_query: str) -> str:
-        """Process user input and provide an appropriate response."""
         faq_question, faq_answer = self.faq_handler.find_similar_question(user_query)
         if faq_answer:
-            return f"FAQ Match: '{faq_question}'\n\n{faq_answer}"
+            return f"🔍 **FAQ Match:** *{faq_question}*\n\n{faq_answer}"
         return self.agentic_ai.generate_response(user_query)
 
     def run(self):
-        # Main section
-        st.title("Hey, I'm **anzum.ai**! 💥")
-        st.write(
-            "I'm the AI clone of **Tanvir Anzum**, here to share my work, journey, and aspirations. Let’s get started! 🌟"
-        )
+        st.set_page_config(page_title="anzum.ai", layout="wide")
 
-        # Sidebar for FAQ
-        st.sidebar.title("FAQs")
+        # ---------------------------
+        # Sidebar
+        # ---------------------------
+        with st.sidebar:
+            st.title("Hey, I'm anzum.ai! 💥")
+            st.caption(" 🤖 Your AI guide to Tanvir Anzum's **work, journey, and aspirations.**")
 
-        # Search box for FAQ filtering
-        search_query = st.sidebar.text_input("Search FAQs:")
+            st.markdown("""
+                <div style='font-size: 14px; font-weight: normal;'>
+                Powered by <strong>Google Gemini AI</strong>, I can answer questions about Tanvir’s <strong>career, research, projects, and consulting</strong>.  
+                Just ask — <strong>Let’s get started!</strong> 🌟
+                </div>
+                """, unsafe_allow_html=True)
 
-        # Filter FAQ list dynamically based on search query
-        filtered_faqs = [q for q in self.faq_data if search_query.lower() in q.lower()] if search_query else list(self.faq_data.keys())
 
-        # Dropdown for filtered FAQs, defaulting to the first matching result
-        if filtered_faqs:
-            selected_faq = st.sidebar.selectbox(
-                "Explore what’s on the minds of other professionals:",
-                filtered_faqs,
-                index=0  # Default to the first matching FAQ
-            )
+            st.title("👨‍💻 Tanvir Anzum")
+            st.caption("AI & Data Researcher | Business & Growth Strategist | ML/NLP-Based Recommendation Specialist")
 
-            # Display the content for the selected FAQ
-            st.sidebar.markdown(f"### {selected_faq}")
-            st.sidebar.write(f"**Answer:** {self.faq_data[selected_faq]}")
-        else:
-            # Placeholder message when no FAQs are found
-            st.sidebar.write("No matching FAQs found. Try another search.")
+            st.markdown("""
+                <div style='font-size: 14px; font-weight: normal;'>
+                Passionate about turning <strong>data into actionable insights</strong> and building intelligent systems.
+                </div> """, unsafe_allow_html=True)
 
-        # Chat interface
-        st.header("Chat with anzum.ai")
+            st.markdown("""
+                <div style='font-size: 14px; font-weight: normal;'>
+                <br>
+                <a href="https://www.linkedin.com/in/aanzum" target="_blank">
+                    <img src="https://cdn-icons-png.flaticon.com/512/174/174857.png" alt="LinkedIn" width="16" style="vertical-align:middle; margin-right:6px;">
+                    <strong>LinkedIn</strong>
+                </a>
+                &nbsp;&nbsp;
+                <a href="https://www.researchgate.net/profile/Tanvir-Anzum" target="_blank">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/ResearchGate_icon_SVG.svg" alt="ResearchGate" width="16" style="vertical-align:middle; margin-right:6px;">
+                    <strong>Research</strong>
+                </a>
+                </div>
+                """, unsafe_allow_html=True)
 
-        # Initialize session state for chat history
+        # ---------------------------
+        # FAQ Section
+        # ---------------------------
+        st.subheader("💡 Frequently Asked Questions")
+
+        desired_order = [
+            "Experience", "Education", "Research", "Work", "Technologies",
+            "Skills", "Projects", "Certificates", "Consulting"
+        ]
+        existing_categories = list(set(faq['category'] for faq in self.faq_data))
+        categories = [cat for cat in desired_order if cat in existing_categories]
+
+        tabs = st.tabs(categories)
+
+        for i, category in enumerate(categories):
+            with tabs[i]:
+                category_faqs = list(filter(lambda x: x['category'] == category, self.faq_data))
+                for faq in category_faqs:
+                    with st.expander(f"❓ {faq['question']}"):
+                        st.markdown(f"{faq['answer']}")
+
+        st.divider()
+
+        # ---------------------------
+        # Chat Section
+        # ---------------------------
+        st.subheader("💬 Chat with anzum.ai")
+
         if "chat_history" not in st.session_state:
             st.session_state.chat_history = []
 
-        # Chat interaction
-        def submit_query():
-            if st.session_state.user_query:
-                with st.spinner("Let me craft a thoughtful reply just for you... ✍️"):
-                    response = self.process_user_query(st.session_state.user_query)
-                    st.session_state.chat_history.append({
-                        "user_query": st.session_state.user_query,
-                        "bot_response": response,
-                        "feedback": None  # Initialize feedback as None
-                    })
-                    st.session_state.user_query = ""
+        # Display Chat History
+        for chat in st.session_state.chat_history:
+            with st.chat_message("user"):
+                st.markdown(chat["user_query"])
 
-        # Start chat section
-        st.subheader("Start Chat:")
-        user_query = st.text_input("What's on your mind?", key="user_query", on_change=submit_query)
+            with st.chat_message("assistant"):
+                st.markdown(chat["bot_response"])
 
-        # Clear chat button
-        if st.button("Clear Chat"):
-            st.session_state.chat_history = []
+        # Chat Input
+        user_query = st.chat_input("What's on your mind ?")
 
-        # Display chat history with feedback for each response
-        for chat in reversed(st.session_state.chat_history):
-            st.markdown(f"**You:** {chat['user_query']}")
-            st.markdown(f"**anzum.ai:** {chat['bot_response']}")
+        if user_query:
+            with st.chat_message("user"):
+                st.markdown(user_query)
 
-            # Feedback for each response
+            with st.spinner("Let me craft a thoughtful reply just for you... 🤖"):
+                response = self.process_user_query(user_query)
+
+            with st.chat_message("assistant"):
+                st.markdown(response)
+
+            st.session_state.chat_history.append({
+                "user_query": user_query,
+                "bot_response": response
+            })
+
+        # ---------------------------
+        # Footer Styling
+        # ---------------------------
+        st.markdown("""
+            <style>
+            .center-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            .center-button {
+                width: 50%;
+                min-width: 300px;
+                padding: 8px 16px;
+                background-color: #f0f2f6;
+                border: none;
+                border-radius: 6px;
+                font-weight: 600;
+                cursor: pointer;
+                text-align: center;
+                transition: background-color 0.3s;
+            }
+            .center-button:hover {
+                background-color: #e0e2e6;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # ---------------------------
+        # Footer Logic
+        # ---------------------------
+        if st.session_state.chat_history:
+            st.markdown("<div class='center-container'>", unsafe_allow_html=True)
+
+            # Feedback appears first
             feedback = st.radio(
-                "Was this response helpful?",
-                options=["👍", "👎"],
-                index=None,  # No default selection
-                key=f"feedback_{st.session_state.chat_history.index(chat)}"
+                "Feedback",
+                ["👍", "👎"],
+                index=None,
+                horizontal=True,
+                key="overall_feedback"
             )
             if feedback:
-                chat["feedback"] = feedback
-                logger.info(f"Feedback for response: {feedback}")
+                logger.info(f"Overall Feedback: {feedback}")  
 
-        # Footer with tips
-        st.write("---")
-        st.markdown(
-            """
-            **Tip:** Type keywords in the FAQ search to find relevant answers quickly!  
-            """
-        )
+            # Start Over button
+            clicked = st.button("Start Over", use_container_width=True)
+            if clicked:
+                st.session_state.chat_history = []
+                self.agentic_ai.configure_ai()
+                st.rerun()  # ✅ Use this instead of st.experimental_rerun()
 
+
+# ---------------------------
+# App Runner
+# ---------------------------
 if __name__ == "__main__":
     try:
         app = AnzumAIApp()
