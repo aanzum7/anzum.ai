@@ -197,7 +197,7 @@ class AnzumAIApp:
                 st.markdown(chat["bot_response"])
 
         # Chat Input
-        user_query = st.chat_input("What's on your mind.....?")
+        user_query = st.chat_input("What's on your mind ?")
 
         if user_query:
             with st.chat_message("user"):
@@ -259,7 +259,7 @@ class AnzumAIApp:
                 key="overall_feedback"
             )
             if feedback:
-                logger.info(f"Overall Feedback: {feedback}")
+                logger.info(f"Overall Feedback: {feedback}")  
 
             # Start Over button
             clicked = st.button("🔄 Start Over", use_container_width=True)
