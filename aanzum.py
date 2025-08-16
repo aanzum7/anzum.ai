@@ -47,12 +47,13 @@ class AgenticAI:
                 input_language = "unknown"
 
             prompt = (
+                f"Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
                 f"FAQ Context: {self.context['faq']}\n"
                 f"Personal Context: {self.context['personal']}\n"
                 f"User Input: {user_input}\n\n"
-                "Act as if you are Tanvir Anzum himself. Respond simply, conversationally, and professionally. "
-                f"The user's input is in {input_language}, but respond in English while maintaining the tone of the input.\n"
-                "If relevant, include links from Tanvir's work or projects. Add appropriate emojis to make it friendlier."
+                "Act as an AI version of Tanvir Anzum and respond in a simple, concise, and conversational manner, "
+                "just like a human chat, while maintaining professionalism and the given context. "
+                "If relevant, you may include links to Tanvir's work or projects."
             )
             response = self.chat_session.send_message(prompt)
             
