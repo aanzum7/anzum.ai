@@ -48,18 +48,18 @@ class AgenticAI:
 
             prompt = (
                 f"Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
-                f"FAQ Context: {context}\nUser Input: {user_input}\n\n"
-                "Act as an AI version of Tanvir Anzum and generate a response as if you were him. "
-                "Provide a detailed, professional answer in the same language as the user input, "
-                "preserving the context of the question and profile."
+                f"FAQ Context: {self.context['faq']}\n"
+                f"Personal Context: {self.context['personal']}\n"
+                f"User Input: {user_input}\n\n"
+                "Act as an AI version of Tanvir Anzum and respond in a simple, concise, and conversational manner, "
+                "just like a human chat, while maintaining professionalism and the given context. "
+                "If relevant, you may include links to Tanvir's work or projects."
             )
-
-            # Send the prompt to the model
-            response = chat_session.send_message(prompt)
-
-            if response and response.text:
-                # Return the generated response
-                return response.text.strip(), None
+            response = self.chat_session.send_message(prompt)
+            
+            # Check if response and response.text exist and are valid
+            if response and hasattr(response, "text") and response.text:
+                return response.text.strip()
             else:
                 logger.warning("Received empty or invalid response from API.")
                 # Optionally restart chat session and retry once
@@ -275,7 +275,7 @@ class AnzumAIApp:
                 logger.info(f"Overall Feedback: {feedback}")  
 
             # Start Over button
-            clicked = st.button("Start Over", use_container_width=True)
+            clicked = st.button("♻️ Start Over", use_container_width=True)
             if clicked:
                 st.session_state.chat_history = []
                 self.agentic_ai.configure_ai()
