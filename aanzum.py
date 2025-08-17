@@ -1,8 +1,8 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # file: app.py
 # ──────────────────────────────────────────────────────────────────────────────
-import streamlit as st
 
+import streamlit as st
 from services.config import load_configuration, ConfigError
 from services.logger import get_logger
 from services.agentic_ai import AgenticAI
