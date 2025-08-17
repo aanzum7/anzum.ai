@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import streamlit as st
 
 from services.agentic_ai import AgenticAI
@@ -11,6 +11,9 @@ from services.faq import FAQHandler
 from services.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Define type alias for readability
+ChatHistory = List[Dict[str, str]]
 
 FOOTER_CSS = """
 <style>
@@ -37,27 +40,32 @@ FOOTER_CSS = """
 </style>
 """
 
-def _ensure_session_state():
+# Ensure chat history exists in session state
+def _ensure_session_state() -> None:
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history: List[Dict[str, str]] = []
+        st.session_state.chat_history = []  # ✅ fixed: removed invalid annotation
 
+
+# Process query through FAQ or AI
 def _process_user_query(user_query: str, faq_handler: FAQHandler, agent: AgenticAI) -> str:
     q, a = faq_handler.find_similar_question(user_query)
     if a:
         return f"🔍 **FAQ Match:** *{q}*\n\n{a}"
     return agent.generate_response(user_query)
 
-def render_chat(faq_handler: FAQHandler, agent: AgenticAI):
+
+# Render full chat interface
+def render_chat(faq_handler: FAQHandler, agent: AgenticAI) -> None:
     _ensure_session_state()
 
-    # Render existing history
+    # Render chat history
     for chat in st.session_state.chat_history:
         with st.chat_message("user"):
             st.markdown(chat["user_query"])
         with st.chat_message("assistant"):
             st.markdown(chat["bot_response"])
 
-    # Input
+    # User input
     user_query = st.chat_input("What's on your mind ?")
 
     if user_query:
@@ -70,9 +78,11 @@ def render_chat(faq_handler: FAQHandler, agent: AgenticAI):
         with st.chat_message("assistant"):
             st.markdown(response)
 
-        st.session_state.chat_history.append({"user_query": user_query, "bot_response": response})
+        st.session_state.chat_history.append(
+            {"user_query": user_query, "bot_response": response}
+        )
 
-    # Footer / feedback
+    # Footer / feedback section
     st.markdown(FOOTER_CSS, unsafe_allow_html=True)
 
     if st.session_state.chat_history:
@@ -92,4 +102,3 @@ def render_chat(faq_handler: FAQHandler, agent: AgenticAI):
             st.session_state.chat_history = []
             agent.reset()
             st.rerun()
-
