@@ -3,11 +3,10 @@
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict
 import logging
 
 import google.generativeai as genai
-import langdetect
 
 from services.logger import get_logger
 
@@ -50,29 +49,20 @@ class AgenticAI:
         logger.info("Resetting chat session.")
         self.chat_session = self.model.start_chat()
 
-    @staticmethod
-    def _detect_language(text: str) -> str:
-        try:
-            return langdetect.detect(text)
-        except langdetect.lang_detect_exception.LangDetectException:
-            return "unknown"
-
-    def _build_prompt(self, user_input: str, input_language: Optional[str]) -> str:
+    def _build_prompt(self, user_input: str) -> str:
         return (
-            "Based on Tanvir Anzum's profile and expertise, answer the following question.\n"
+            f"Based on Tanvir Anzum's profile and expertise (from context links),\n"
             f"FAQ Context: {self.context.get('faq')}\n"
-            f"Personal Context: {self.context.get('personal')}\n"
-            f"Detected Language: {input_language}\n"
-            f"User Input: {user_input}\n\n"
+            f"Personal Context: {self.context.get('personal')}\n\n"
+            f"From here, answer the question asked by the user:\nUser Input: {user_input}\n\n"
             "Act as an AI version of Tanvir Anzum and respond in a simple, concise, and conversational manner, "
-            "like a human chat, while maintaining professionalism and the given context. "
-            "If relevant, you may include links to Tanvir's work or projects."
+            "like a human chat, while maintaining professionalism (reply in the style and format asked) "
+            "and leveraging the given context. If relevant, you may include links as buttons from Tanvir's overall portfolio."
         )
 
     def generate_response(self, user_input: str) -> str:
         try:
-            input_language = self._detect_language(user_input)
-            prompt = self._build_prompt(user_input, input_language)
+            prompt = self._build_prompt(user_input)
 
             response = self.chat_session.send_message(prompt)
             if response and hasattr(response, "text") and response.text:
@@ -90,4 +80,3 @@ class AgenticAI:
         except Exception as e:
             logger.exception("Error generating response.")
             return f"⚠️ Error: {e}"
-
