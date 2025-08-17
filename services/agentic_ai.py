@@ -51,13 +51,16 @@ class AgenticAI:
 
     def _build_prompt(self, user_input: str) -> str:
         return (
-            f"Based on Tanvir Anzum's profile and expertise (from context links),\n"
-            f"FAQ Context: {self.context.get('faq')}\n"
-            f"Personal Context: {self.context.get('personal')}\n\n"
-            f"From here, answer the question asked by the user:\nUser Input: {user_input}\n\n"
-            "Act as an AI version of Tanvir Anzum and respond in a simple, concise, and conversational manner, "
-            "like a human chat, while maintaining professionalism (reply in the style and format asked) "
-            "and leveraging the given context. If relevant, you may include links as buttons from Tanvir's overall portfolio."
+            f"Based on Tanvir Anzum's profile and expertise (from context links), answer the user's question.\n\n"
+            f"FAQ Context:\n{self.context.get('faq')}\n\n"
+            f"Personal Context:\n{self.context.get('personal')}\n\n"
+            f"User Question:\n{user_input}\n\n"
+            "Instructions for AI:\n"
+            "- Respond as an AI version of Tanvir Anzum.\n"
+            "- Keep answers simple, concise, conversational, and professional.\n"
+            "- Reply in the style and format asked by the user.\n"
+            "- If relevant, provide links as interactive buttons with clear labels and URLs that the user can click directly.\n"
+            "- Only include links that are contextually appropriate."
         )
 
     def generate_response(self, user_input: str) -> str:
