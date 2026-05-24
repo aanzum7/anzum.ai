@@ -1,6 +1,3 @@
-# ──────────────────────────────────────────────────────────────────────────────
-# file: app.py
-# ──────────────────────────────────────────────────────────────────────────────
 import streamlit as st
 from services.config import load_configuration, ConfigError
 from services.logger import get_logger
