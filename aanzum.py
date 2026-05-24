@@ -1,14 +1,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# file: app.py (Unified Agentic Development Kit Playground)
+# file: app.py (Unified Gemini-Styled Portfolio Agent)
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
 import os
 import sys
-import json
 import logging
 from typing import Dict, List, Tuple, Any, Optional
-from dataclasses import dataclass, asdict
 from difflib import SequenceMatcher
 
 import toml
@@ -16,341 +14,465 @@ import streamlit as st
 import google.generativeai as genai
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 1. CORE LOGGING & CONFIGURATION LAYER
+# 1. LOGGING & INITIALIZATION SETUP
 # ──────────────────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)]
 )
-logger = logging.getLogger("AgenticDevelopmentKit")
+logger = logging.getLogger("anzum_ai")
 
 class ConfigError(Exception):
     """Raised when configuration cannot be loaded or is invalid."""
 
-# Global Mock Data to ensure the app works seamlessly right out of the box
-DEFAULT_MOCK_SECRETS = {
-    "genai": {"api_key": os.getenv("GEMINI_API_KEY", "MOCK_KEY_DISREGARD_IF_PROD")},
+# ──────────────────────────────────────────────────────────────────────────────
+# 2. DATA FALLBACKS & CONFIGURATION HANDLERS
+# ──────────────────────────────────────────────────────────────────────────────
+DEFAULT_MOCK_DATA = {
+    "genai": {"api_key": os.getenv("GEMINI_API_KEY", "MOCK_KEY_IF_SECRETS_MISSING")},
     "personal": {
         "data": {
             "name": "Tanvir Anzum",
-            "role": "AI Engineer & Software Architect",
+            "role": "Data Analyst & AI Workflow Engineer",
             "location": "Dhaka, Bangladesh",
-            "bio": "Specialized in building scalable production-grade LLM applications and agentic workflows.",
-            "github": "https://github.com/tanviranzum",
-            "linkedin": "https://linkedin.com/in/tanviranzum"
+            "bio": "Specialized in Python, SQL (BigQuery), automation with Selenium, and building Gemini API agent architectures.",
         }
     },
     "faq": {
         "questions": [
             {
                 "category": "Experience",
-                "question": "What is Tanvir's primary area of expertise?",
-                "answer": "Tanvir specializes in Agentic AI workflows, LLM fine-tuning, RAG pipelines, and backend software engineering."
+                "question": "What is Tanvir's primary background?",
+                "answer": "Tanvir is a Data Analyst who develops automated ETL pipelines, processes election data systems, and builds Gemini API integrations."
             },
             {
-                "category": "Projects",
-                "question": "Can I see his recent open-source work?",
-                "answer": "Yes! You can view Tanvir's open-source implementations on his GitHub profile (https://github.com/tanviranzum)."
-            },
-            {
-                "category": "Contact",
-                "question": "How can I get in touch with Tanvir?",
-                "answer": "You can connect with him directly on LinkedIn or schedule an engineering sync via his portfolio links."
+                "category": "Skills",
+                "question": "What technologies does he specialize in?",
+                "answer": "He actively works with Python, Streamlit, SQL (BigQuery, MySQL), Selenium, and Google Cloud Platform (GCP) ecosystems."
             }
         ]
     }
 }
 
 def load_configuration() -> Tuple[List[Dict[str, Any]], Dict[str, Any], str]:
-    """
-    Attempts to read .streamlit/secrets.toml. 
-    Gracefully falls back to mock data with a warning banner if not present.
-    """
+    """Loads configuration safely from secrets or handles sandbox fallbacks."""
     secrets_path = os.path.join(".streamlit", "secrets.toml")
     if not os.path.exists(secrets_path):
-        logger.warning("Secrets file not found. Initializing ADK Playground with demo environment data.")
-        st.sidebar.warning("⚠️ Running in Demo Sandbox mode with Mock Data.")
-        s = DEFAULT_MOCK_SECRETS
+        logger.warning("Secrets file not detected. Booting with sandbox assets.")
+        s = DEFAULT_MOCK_DATA
         return s["faq"]["questions"], s["personal"]["data"], s["genai"]["api_key"]
 
     try:
         secrets = toml.load(secrets_path)
-        faq_data = secrets["faq"]["questions"]
-        personal_context = secrets["personal"]["data"]
-        api_key = secrets["genai"]["api_key"]
-        return faq_data, personal_context, api_key
+        return secrets["faq"]["questions"], secrets["personal"]["data"], secrets["genai"]["api_key"]
     except Exception as e:
-        logger.error(f"Malformed secrets tracking: {e}. Reverting to fallback config.")
-        st.sidebar.error(f"Failed to compile configurations: {e}")
-        s = DEFAULT_MOCK_SECRETS
+        logger.error(f"Failed to read standard secrets configuration block: {e}")
+        s = DEFAULT_MOCK_DATA
         return s["faq"]["questions"], s["personal"]["data"], s["genai"]["api_key"]
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 2. AGENT TOOLS & REASONING SERVICES
+# 3. DETERMINISTIC FAQ MATCHER & AGENT ENGINE
 # ──────────────────────────────────────────────────────────────────────────────
-class FAQRetrievalTool:
-    """Deterministic Vector-like fuzzy router used directly as an LLM Function Tool."""
+class FAQHandler:
+    """Finds the most structurally similar FAQ entry to ground user inputs."""
     def __init__(self, faq_list: List[Dict[str, Any]]):
         self.faq_list = faq_list
 
-    def search_faq(self, query: str, threshold: float = 0.55) -> Dict[str, Any]:
-        """
-        Scans registered vector database/FAQ nodes for semantic string matches.
-        
-        Args:
-            query: The extracted user search intent.
-            threshold: Minimum matching confidence ratio.
-        """
-        best_match = None
-        best_answer = None
-        highest_score = 0.0
-        target = query.lower().strip()
+    def find_similar_question(self, user_input: str, threshold: float = 0.65) -> Tuple[Optional[str], Optional[str]]:
+        most_similar_question, best_answer = None, None
+        highest_similarity = 0.0
 
-        for item in self.faq_list:
-            question = str(item.get("question", "")).lower()
-            score = SequenceMatcher(None, target, question).ratio()
-            if score > highest_score:
-                highest_score = score
-                best_match = item.get("question")
-                best_answer = item.get("answer")
+        target = user_input.lower().strip()
+        for faq in self.faq_list:
+            q = str(faq.get("question", "")).lower()
+            sim = SequenceMatcher(None, target, q).ratio()
+            if sim > highest_similarity:
+                highest_similarity = sim
+                most_similar_question = faq.get("question")
+                best_answer = faq.get("answer")
 
-        if highest_score >= threshold:
-            return {"status": "success", "found": True, "question": best_match, "answer": best_answer, "confidence": round(highest_score, 2)}
-        return {"status": "success", "found": False, "message": "No explicit FAQ override discovered."}
+        if highest_similarity >= threshold:
+            return most_similar_question, best_answer
+        return None, None
 
 
-@dataclass
-class AgentTrace:
-    """Logs runtime agent lifecycle iterations for the developer layout panels."""
-    event_type: str
-    payload: Any
-    timestamp: str = ""
-
-    def to_json(self) -> str:
-        return json.dumps(asdict(self), indent=2, default=str)
-
-
-class AutonomousOrchestrator:
-    """
-    Advanced Orchestrator featuring dynamic multi-tool structural matching execution
-    and real-time execution trace reporting.
-    """
-    def __init__(self, api_key: str, personal_context: Dict[str, Any], faq_tool: FAQRetrievalTool):
+class AgenticAI:
+    """Resilient interface wrapping Gemini inference with localized safety structures."""
+    def __init__(self, api_key: str, context: Dict[str, Any]):
         self.api_key = api_key
-        self.personal_context = personal_context
-        self.faq_tool = faq_tool
-        self.traces: List[AgentTrace] = []
-        self._init_gemini_client()
+        self.context = context
+        self.model = None
+        self._configure_ai()
 
-    def _init_gemini_client(self):
-        if not self.api_key or self.api_key == "MOCK_KEY_DISREGARD_IF_PROD":
-            self.model = None
+    def _configure_ai(self):
+        if not self.api_key or self.api_key == "MOCK_KEY_IF_SECRETS_MISSING":
             return
         try:
             genai.configure(api_key=self.api_key)
-            # Declaring capabilities explicitly using Function Call configurations
             self.model = genai.GenerativeModel(
                 model_name="gemini-2.5-flash-lite",
                 generation_config={
-                    "temperature": st.session_state.get("param_temp", 0.3),
-                    "top_p": st.session_state.get("param_top_p", 0.95),
-                    "max_output_tokens": st.session_state.get("param_max_tokens", 800),
-                }
+                    "temperature": 0.5,
+                    "top_p": 0.9,
+                    "max_output_tokens": 512,
+                },
             )
         except Exception as e:
-            logger.exception("Failed to establish Agent engine cluster link.")
-            self.model = None
+            logger.exception("Failed to connect with live Generative model cluster.")
 
-    def execute_agent_loop(self, user_prompt: str, system_instruction: str) -> str:
-        """
-        Executes a classic Agentic Loop: 
-        1. Context validation -> 2. Query Routing Tool Strategy -> 3. Execution -> 4. Synthesis
-        """
-        self.traces.clear()
-        import datetime
-        ts = lambda: datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-
-        self.traces.append(AgentTrace("InputReceived", {"prompt": user_prompt}, ts()))
-
-        # Step 1: Execute Autonomous Fuzzy-Matching Pipeline
-        self.traces.append(AgentTrace("ToolCall_Invoked", {"tool": "FAQRetrievalTool", "input": user_prompt}, ts()))
-        tool_res = self.faq_tool.search_faq(user_prompt)
-        self.traces.append(AgentTrace("ToolCall_Completed", {"output": tool_res}, ts()))
-
-        # Step 2: Formulate dynamic multi-agent perspective execution context
-        injected_context = f"Personal Base Data Context:\n{json.dumps(self.personal_context, indent=2)}\n\n"
-        if tool_res.get("found"):
-            injected_context += f"Verified Ground Truth Match Found:\nQ: {tool_res['question']}\nA: {tool_res['answer']}\n"
-        else:
-            injected_context += "Verified Ground Truth Match Found: None. Rely on system profile knowledge context directly.\n"
-
-        # Step 3: Call Model for synthesis / reasoning
-        if not self.model:
-            # Safe localized deterministic fallback when API keys are absent
-            self.traces.append(AgentTrace("FallbackExecution", "No active Gemini cluster connection. Direct compilation applied.", ts()))
-            if tool_res.get("found"):
-                return f"🤖 [Local Demo Agent Direct Output]\n\n{tool_res['answer']}"
-            return f"🤖 [Local Demo Agent Direct Output]\n\nHello! I am an agent representing Tanvir. I received your message: '{user_prompt}'. Please add a real Gemini API Key into your Streamlit configurations or system environment variables to test complex cross-reasoning generation patterns."
-
-        # Step 4: LLM Generation Inference Pipeline
-        try:
-            full_compiled_prompt = (
-                f"{system_instruction}\n\n"
-                f"--- RUNTIME CONTEXT ENGINE ---\n"
-                f"{injected_context}\n\n"
-                f"--- USER RUNTIME INPUT ---\n"
-                f"{user_prompt}"
-            )
-            
-            self.traces.append(AgentTrace("LLM_Inference_Start", {"engine": "gemini-2.5-flash-lite"}, ts()))
-            response = self.model.generate_content(full_compiled_prompt)
-            output_text = response.text.strip() if (response and response.text) else "Error: Empty sequence returned."
-            
-            self.traces.append(AgentTrace("LLM_Inference_End", {"output_preview": output_text[:120] + "..."}, ts()))
-            return output_text
-        except Exception as e:
-            self.traces.append(AgentTrace("Pipeline_Execution_Failure", {"exception": str(e)}, ts()))
-            return f"⚠️ Orchestrator execution collapsed under trace path execution: {e}"
-
-# ──────────────────────────────────────────────────────────────────────────────
-# 3. STREAMLIT INTERACTIVE GRAPHICAL ADK UI SURFACE
-# ──────────────────────────────────────────────────────────────────────────────
-def init_session_states():
-    """Initializes multi-agent global control parameters."""
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "🤖 System agent initial state online. Diagnostics connection confirmed. Ask me anything regarding Tanvir's portfolio framework."}
-        ]
-    if "agent_traces" not in st.session_state:
-        st.session_state.agent_traces = []
-    if "system_prompt_override" not in st.session_state:
-        st.session_state.system_prompt_override = (
-            "Instructions for AI Agent:\n"
-            "- You are Tanvir Anzum's digital twin AI representative.\n"
-            "- Speak with engineering precision, keeping statements clean, concise, and professional.\n"
-            "- Render interactive Markdown lists or structured layout panels when providing external references."
+    def _build_prompt(self, user_input: str) -> str:
+        return (
+            f"Based on Tanvir Anzum's profile and expertise context, answer the question accurately.\n\n"
+            f"FAQ Grounding Information:\n{self.context.get('faq')}\n\n"
+            f"Personal Context Profile:\n{self.context.get('personal')}\n\n"
+            f"User Query:\n{user_input}\n\n"
+            "Instructions for Response Execution:\n"
+            "- Respond strictly as a professional, direct digital representative of Tanvir Anzum.\n"
+            "- Keep answers clean, beautifully structured, conversationally fluid, and concise.\n"
+            "- Always retain the requested format requested by the user."
         )
 
+    def generate_response(self, user_input: str) -> str:
+        if not self.model:
+            return "🤖 Hello! I am running in local sandbox mode. Please inject your real `GEMINI_API_KEY` into your secrets file to establish an external inference sync."
+        try:
+            compiled_prompt = self._build_prompt(user_input)
+            response = self.model.generate_content(compiled_prompt)
+            if response and response.text:
+                return response.text.strip()
+            return "🤖 I apologized, I encountered an empty sequence token loop. Please try again."
+        except Exception as e:
+            logger.exception("Error executing upstream chat loop inference.")
+            return f"⚠️ Engine Interface Error: {e}"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 4. MOCK INTERFACE COMPONENT FALLBACKS (If external files are missing)
+# ──────────────────────────────────────────────────────────────────────────────
+def render_sidebar():
+    with st.sidebar:
+        st.markdown("### 🧬 Connections")
+        st.markdown("• [GitHub](https://github.com/tanviranzum)")
+        st.markdown("• [LinkedIn](https://linkedin.com/in/tanviranzum)")
+        st.divider()
+        if st.button("Clear Conversation Cache", use_container_width=True):
+            st.session_state.messages = []
+            st.rerun()
+
+def render_faq_tabs(faq_data: List[Dict[str, Any]]):
+    categories = list(set([item.get("category", "General") for item in faq_data]))
+    tabs = st.tabs(categories)
+    for tab, cat in zip(tabs, categories):
+        with tab:
+            for item in faq_data:
+                if item.get("category") == cat:
+                    with st.expander(item.get("question", "")):
+                        st.write(item.get("answer", ""))
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 5. HIGHLY OPTIMIZED INTERACTIVE CHAT SURFACE
+# ──────────────────────────────────────────────────────────────────────────────
+def handle_chat_session(faq_handler: FAQHandler, agent: AgenticAI):
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Display clean historic messaging loops
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Core message evaluation capture
+    if user_prompt := st.chat_input("Ask me about Tanvir's skills, projects, or background..."):
+        # Append and render user statement instantly
+        st.session_state.messages.append({"role": "user", "content": user_prompt})
+        with st.chat_message("user"):
+            st.markdown(user_prompt)
+
+        # Trigger inference execution frame
+        with st.chat_message("assistant"):
+            with st.spinner("Processing intent tokens..."):
+                # Track matching ground truth rules before invoking structural LLM processing
+                matched_q, matched_a = faq_handler.find_similar_question(user_prompt)
+                
+                if matched_a:
+                    response_text = matched_a
+                else:
+                    response_text = agent.generate_response(user_prompt)
+                
+                st.markdown(response_text)
+        
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 6. APPLICATION STYLE SHEETS & STRUCTURE MARKS
+# ──────────────────────────────────────────────────────────────────────────────
+GEMINI_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght=0,400;0,500;0,600;1,400&family=Google+Sans+Mono:wght=400;500&display=swap');
+
+:root {
+    --bg:        #131314;
+    --bg2:       #1e1f20;
+    --bg3:       #28292a;
+    --line:      rgba(255,255,255,0.07);
+    --line2:     rgba(255,255,255,0.13);
+    --text:      #e3e3e3;
+    --muted:     #8e918f;
+    --blue:      #89b4f8;
+    --purple:    #c084fc;
+    --teal:      #4ade80;
+    --grad:      linear-gradient(90deg,#89b4f8,#c084fc,#f472b6);
+    --grad2:     linear-gradient(135deg,#89b4f8 0%,#c084fc 60%,#f472b6 100%);
+    --r:         14px;
+    --r2:        20px;
+    --font:      'Google Sans', sans-serif;
+    --mono:      'Google Sans Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, [class*="st-"] { font-family: var(--font) !important; }
+.stApp { background: var(--bg) !important; }
+.block-container {
+    max-width: 860px !important;
+    padding: 0 2rem 6rem !important;
+    margin: 0 auto !important;
+}
+
+#MainMenu, footer, [data-testid="stToolbar"],
+[data-testid="stDecoration"], .stDeployButton { display: none !important; }
+header[data-testid="stHeader"] { display: none !important; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 4px; }
+
+[data-testid="stSidebar"] {
+    background: var(--bg2) !important;
+    border-right: 1px solid var(--line) !important;
+}
+[data-testid="stSidebar"] > div { padding-top: 1.5rem !important; }
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] li,
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: var(--text) !important; }
+[data-testid="stSidebar"] a   { color: var(--blue) !important; }
+[data-testid="stSidebar"] .stMarkdown p { font-size: 13.5px !important; line-height: 1.65 !important; color: #aaa !important; }
+
+.gem-hero {
+    padding: 56px 0 44px;
+    text-align: center;
+    position: relative;
+}
+.gem-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 520px; height: 300px;
+    background: radial-gradient(ellipse at center, rgba(137,180,248,0.07) 0%, rgba(196,132,252,0.04) 45%, transparent 70%);
+    pointer-events: none;
+}
+
+.gem-avatar-wrap {
+    position: relative;
+    width: 72px; height: 72px;
+    margin: 0 auto 18px;
+}
+.gem-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--grad2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 600; color: #fff;
+    position: relative; z-index: 1;
+}
+.gem-avatar-ring {
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #89b4f8, #c084fc, #f472b6, #89b4f8);
+    animation: spin 4s linear infinite;
+    z-index: 0;
+}
+.gem-avatar-ring::after {
+    content: '';
+    position: absolute; inset: 3px;
+    border-radius: 50%;
+    background: var(--bg);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.gem-thinking-badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(137,180,248,0.07);
+    border: 1px solid rgba(137,180,248,0.18);
+    border-radius: 24px;
+    padding: 6px 16px;
+    margin-bottom: 20px;
+    font-size: 12.5px; font-weight: 500; color: var(--blue);
+}
+.gem-thinking-dots { display: flex; gap: 4px; align-items: center; }
+.gem-thinking-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--blue);
+    animation: tdot 1.4s ease-in-out infinite;
+}
+.gem-thinking-dots span:nth-child(2) { animation-delay: .2s; background: var(--purple); }
+.gem-thinking-dots span:nth-child(3) { animation-delay: .4s; background: #f472b6; }
+@keyframes tdot {
+    0%,80%,100% { transform: scale(.6); opacity:.35; }
+    40%         { transform: scale(1); opacity:1; }
+}
+
+.gem-name {
+    font-size: 42px; font-weight: 600; letter-spacing: -1px;
+    background: var(--grad);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 10px;
+    line-height: 1.1;
+}
+.gem-tagline {
+    font-size: 15.5px; color: var(--muted);
+    max-width: 420px; margin: 0 auto;
+    line-height: 1.65;
+}
+
+.gem-caps {
+    display: flex; flex-wrap: wrap; gap: 9px;
+    justify-content: center; margin: 28px auto 0; max-width: 620px;
+}
+.gem-cap {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--bg2); border: 1px solid var(--line2);
+    border-radius: 24px; padding: 7px 15px;
+    font-size: 12.5px; font-weight: 500; color: var(--muted);
+}
+.gem-cap-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.gem-label {
+    display: flex; align-items: center; gap: 10px;
+    margin: 44px 0 20px; padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+}
+.gem-label-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; background: var(--bg3);
+    border: 1px solid var(--line2); flex-shrink: 0;
+}
+.gem-label-text {
+    font-size: 14px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+}
+
+.stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid var(--line) !important; padding: 0 !important; }
+.stTabs [data-baseweb="tab"] { background: transparent !important; color: var(--muted) !important; font-size: 13px !important; border-bottom: 2px solid transparent !important; padding: 11px 16px !important; }
+.stTabs [aria-selected="true"] { color: var(--blue) !important; border-bottom-color: var(--blue) !important; }
+.stTabs [data-baseweb="tab-highlight"] { display: none !important; }
+.stTabs [data-baseweb="tab-panel"] { background: transparent !important; padding: 16px 0 0 !important; }
+
+details, [data-testid="stExpander"] { background: var(--bg2) !important; border: 1px solid var(--line) !important; border-radius: var(--r) !important; margin-bottom: 10px !important; overflow: hidden; }
+details summary, [data-testid="stExpander"] summary { font-size: 14px !important; font-weight: 500 !important; color: var(--text) !important; padding: 15px 18px !important; }
+[data-testid="stExpander"] > div > div { padding: 2px 18px 16px !important; color: #9e9e9e !important; font-size: 13.5px !important; line-height: 1.72 !important; }
+
+hr, [data-testid="stDivider"] { border-color: var(--line) !important; margin: 40px 0 !important; }
+
+[data-testid="stChatInput"] { background: var(--bg2) !important; border: 1px solid var(--line2) !important; border-radius: var(--r2) !important; padding: 6px 10px !important; box-shadow: 0 2px 18px rgba(0,0,0,0.35) !important; }
+[data-testid="stChatInput"] textarea { background: transparent !important; color: var(--text) !important; font-size: 15px !important; border: none !important; }
+[data-testid="stChatInput"] button { background: var(--grad2) !important; border-radius: 10px !important; }
+
+[data-testid="stChatMessage"] { background: transparent !important; border: none !important; padding: 4px 0 !important; gap: 14px !important; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: var(--bg2) !important; border-radius: var(--r2) !important; padding: 16px 20px !important; border: 1px solid var(--line) !important; margin-bottom: 12px; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: transparent !important; border-left: 2px solid rgba(137,180,248,0.25) !important; padding-left: 20px !important; border-radius: 0 !important; margin-bottom: 12px; }
+
+.stButton > button { background: var(--bg3) !important; color: var(--muted) !important; border: 1px solid var(--line2) !important; border-radius: 24px !important; padding: 7px 20px !important; }
+.stMarkdown p, .stMarkdown li { color: var(--text) !important; font-size: 14.5px !important; line-height: 1.75 !important; }
+.stMarkdown a  { color: var(--blue) !important; text-decoration: none !important; }
+.stMarkdown code { background: rgba(255,255,255,0.06) !important; color: #93c5fd !important; border-radius: 5px !important; padding: 1px 6px !important; }
+
+h3 { display: none !important; }
+</style>
+"""
+
+HERO_HTML = """
+<div class="gem-hero">
+    <div class="gem-avatar-wrap">
+        <div class="gem-avatar-ring"></div>
+        <div class="gem-avatar">A</div>
+    </div>
+    <div class="gem-thinking-badge">
+        <div class="gem-thinking-dots">
+            <span></span><span></span><span></span>
+        </div>
+        Ready to assist
+    </div>
+    <h1 class="gem-name">anzum.ai</h1>
+    <p class="gem-tagline">Ask me anything about Tanvir Anzum — research, projects, skills, and experience.</p>
+    <div class="gem-caps">
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#89b4f8"></div>Data Pipelines</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#c084fc"></div>Automation Scrapers</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#4ade80"></div>Cloud Infrastructure</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#f472b6"></div>Gemini Workflows</div>
+    </div>
+</div>
+"""
+
+FAQ_LABEL = """
+<div class="gem-label">
+    <div class="gem-label-icon">💡</div>
+    <span class="gem-label-text">Frequently Asked Questions</span>
+</div>
+"""
+
+CHAT_LABEL = """
+<div class="gem-label">
+    <div class="gem-label-icon">✦</div>
+    <span class="gem-label-text">Ask anzum.ai</span>
+</div>
+"""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 7. RUNTIME APP EXECUTION ENTRYPOINT
+# ──────────────────────────────────────────────────────────────────────────────
 def main():
     st.set_page_config(
-        page_title="anzum.ai - ADK Playground",
-        page_icon="⚡",
+        page_title="anzum.ai",
+        page_icon="✦",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="expanded",
     )
-    init_session_states()
 
-    # --- TOP HERO LOGO HEADER ---
-    st.markdown("""
-        <div style='padding: 1rem; border-bottom: 1px solid #383b40; margin-bottom: 2rem;'>
-            <h1 style='margin: 0; color: #00f0ff; font-family: monospace;'>⚡ anzum.ai // Agentic Development Kit</h1>
-            <p style='margin: 5px 0 0 0; color: #8a909a; font-size: 0.9rem;'>Production Multi-Agent Workspace Playground & Knowledge Router</p>
-        </div>
-    """, unsafe_allow_html=True)
+    # Render CSS and premium header modules
+    st.markdown(GEMINI_CSS, unsafe_allow_html=True)
+    st.markdown(HERO_HTML, unsafe_allow_html=True)
 
-    # Load global system configuration variables
+    # Initialize assets and handlers
     faq_data, personal_context, api_key = load_configuration()
-    faq_tool = FAQRetrievalTool(faq_data)
-    orchestrator = AutonomousOrchestrator(api_key, personal_context, faq_tool)
+    faq_handler = FAQHandler(faq_data)
+    agent = AgenticAI(api_key=api_key, context={"faq": faq_data, "personal": personal_context})
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # SIDEBAR CONTROL: LLM HYPERPARAMETERS & ENGINE METRICS
-    # ──────────────────────────────────────────────────────────────────────────
-    with st.sidebar:
-        st.markdown("### 🛠️ ADK Core Engine Params")
-        st.session_state.param_temp = st.slider("Temperature Range", 0.0, 1.0, 0.3, 0.05)
-        st.session_state.param_top_p = st.slider("Nucleus Sampling (Top P)", 0.1, 1.0, 0.95, 0.05)
-        st.session_state.param_max_tokens = st.number_input("Max Output Tokens Buffer", 128, 4096, 768, 64)
-        
-        st.divider()
-        st.markdown("### 📋 Agent Profiles & Vector Memory Base")
-        with st.expander("Show Injected Personal Profile"):
-            st.json(personal_context)
-        with st.expander("Show Registered FAQ Vectors"):
-            st.json(faq_data)
-            
-        if st.button("🧹 Flush Conversation Cache", use_container_width=True):
-            st.session_state.messages = [{"role": "assistant", "content": "Conversation system storage cleared. Re-initializing engine diagnostics."}]
-            st.session_state.agent_traces = []
-            st.rerun()
+    # Render layout elements
+    try:
+        from ui.sidebar import render_sidebar as actual_sidebar
+        actual_sidebar()
+    except ImportError:
+        render_sidebar()
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # MAIN ADK PLAYGROUND VIEW: 2-COLUMN DUAL DASHBOARD INTERACTIVE DESIGN
-    # ──────────────────────────────────────────────────────────────────────────
-    workspace_col, telemetry_col = st.columns([1.1, 0.9], gap="medium")
+    # FAQ Section
+    st.markdown(FAQ_LABEL, unsafe_allow_html=True)
+    try:
+        from ui.faq_view import render_faq_tabs as actual_faq_tabs
+        actual_faq_tabs(faq_data)
+    except ImportError:
+        render_faq_tabs(faq_data)
 
-    # --- LEFT PANEL: INTERACTIVE APPLICATION PLATFORM ---
-    with workspace_col:
-        st.markdown("### 🖥️ Live Agent Workspace")
-        
-        # Adjustable System Instructions directly on the UI dashboard surface
-        with st.expander("⚙️ System Agent Architecture Instruction Configuration", expanded=False):
-            st.session_state.system_prompt_override = st.text_area(
-                "Modify active system personality framing agent rules:",
-                value=st.session_state.system_prompt_override,
-                height=150
-            )
+    st.divider()
 
-        st.markdown("---")
-        # Chat container UI loop block
-        chat_container = st.container(height=450)
-        with chat_container:
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+    # Chat Module Section
+    st.markdown(CHAT_LABEL, unsafe_allow_html=True)
+    handle_chat_session(faq_handler=faq_handler, agent=agent)
 
-        # Input box capture targeting orchestrator triggers
-        if user_query := st.chat_input("Dispatch agentic instruction or query..."):
-            with chat_container:
-                st.chat_message("user").markdown(user_query)
-            st.session_state.messages.append({"role": "user", "content": user_query})
-
-            # Process prompt through multi-agent reasoning track loops
-            with st.spinner("Executing Orchestrator Track Routing..."):
-                agent_response = orchestrator.execute_agent_loop(
-                    user_prompt=user_query,
-                    system_instruction=st.session_state.system_prompt_override
-                )
-
-            # Store computed steps for developer workspace telemetry output views
-            st.session_state.agent_traces = orchestrator.traces
-            
-            with chat_container:
-                st.chat_message("assistant").markdown(agent_response)
-            st.session_state.messages.append({"role": "assistant", "content": agent_response})
-            st.rerun()
-
-    # --- RIGHT PANEL: TELEMETRY TRACING & REAL-TIME LOG DEEP DIVE ---
-    with telemetry_col:
-        st.markdown("### 🧬 Real-Time Agent Telemetry Inspector")
-        st.caption("Inspect live multi-agent execution graphs, state decisions, and trace call stacks.")
-        
-        if not st.session_state.agent_traces:
-            st.info("No active traces captured. Query the agent engine to output dynamic tool tracking context logs.")
-        else:
-            for idx, trace in enumerate(st.session_state.agent_traces):
-                # Color code status logs for immediate production readability
-                color_map = {
-                    "InputReceived": "🔵",
-                    "ToolCall_Invoked": "🟡",
-                    "ToolCall_Completed": "🟢",
-                    "LLM_Inference_Start": "🚀",
-                    "LLM_Inference_End": "⚡",
-                    "FallbackExecution": "🟣"
-                }
-                emoji = color_map.get(trace.event_type, "⚙️")
-                
-                with st.expander(f"{emoji} Step {idx+1}: {trace.event_type} [{trace.timestamp}]", expanded=(idx == len(st.session_state.agent_traces)-1)):
-                    st.code(trace.to_json(), language="json")
-
-        # Static ADK Diagnostics Overview Metrics Block
-        st.markdown("### 📊 ADK Component Architecture Map")
-        metric_col1, metric_col2 = st.columns(2)
-        with metric_col1:
-            st.metric(label="Active External Tool Interfaces", value="1 (FAQ Fuzzy Router)")
-        with metric_col2:
-            st.metric(label="System Target Backbone Model", value="gemini-2.5-flash-lite")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        st.error(f"Application crashed: {e}")
+        logger.exception("Fatal runtime event generated execution fault.")
