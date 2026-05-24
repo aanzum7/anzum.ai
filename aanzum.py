@@ -147,18 +147,8 @@ class AgenticAI:
             return f"⚠️ Engine Interface Error: {e}"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 4. MOCK INTERFACE COMPONENT FALLBACKS (If external files are missing)
+# 4. INTERFACE COMPONENT FALLBACKS
 # ──────────────────────────────────────────────────────────────────────────────
-def render_sidebar():
-    with st.sidebar:
-        st.markdown("### 🧬 Connections")
-        st.markdown("• [GitHub](https://github.com/tanviranzum)")
-        st.markdown("• [LinkedIn](https://linkedin.com/in/tanviranzum)")
-        st.divider()
-        if st.button("Clear Conversation Cache", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
-
 def render_faq_tabs(faq_data: List[Dict[str, Any]]):
     categories = list(set([item.get("category", "General") for item in faq_data]))
     tabs = st.tabs(categories)
@@ -229,6 +219,7 @@ GEMINI_CSS = """
     --mono:      'Google Sans Mono', monospace;
 }
 
+/* ── Base ── */
 *, *::before, *::after { box-sizing: border-box; }
 html, body, [class*="st-"] { font-family: var(--font) !important; }
 .stApp { background: var(--bg) !important; }
@@ -238,24 +229,28 @@ html, body, [class*="st-"] { font-family: var(--font) !important; }
     margin: 0 auto !important;
 }
 
+/* ── CRITICAL: SIDEBAR REMOVAL OVERRIDES ── */
+[data-testid="stSidebar"], [data-testid="stSidebarCollapseButton"], 
+section[data-testid="stSidebar"] {
+    display: none !important;
+    width: 0px !important;
+    visibility: hidden !important;
+}
+.st-emotion-cache-18ni7ap, .st-emotion-cache-79elbk {
+    margin-left: 0px !important;
+}
+
+/* ── Hide Chrome Layouts ── */
 #MainMenu, footer, [data-testid="stToolbar"],
 [data-testid="stDecoration"], .stDeployButton { display: none !important; }
 header[data-testid="stHeader"] { display: none !important; }
 
+/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 4px; }
 
-[data-testid="stSidebar"] {
-    background: var(--bg2) !important;
-    border-right: 1px solid var(--line) !important;
-}
-[data-testid="stSidebar"] > div { padding-top: 1.5rem !important; }
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] li,
-[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: var(--text) !important; }
-[data-testid="stSidebar"] a   { color: var(--blue) !important; }
-[data-testid="stSidebar"] .stMarkdown p { font-size: 13.5px !important; line-height: 1.65 !important; color: #aaa !important; }
-
+/* ── Hero Presentation Element Structure ── */
 .gem-hero {
     padding: 56px 0 44px;
     text-align: center;
@@ -362,6 +357,7 @@ header[data-testid="stHeader"] { display: none !important; }
     text-transform: uppercase; letter-spacing: 1px;
 }
 
+/* ── Tab Controls ── */
 .stTabs [data-baseweb="tab-list"] { background: transparent !important; border-bottom: 1px solid var(--line) !important; padding: 0 !important; }
 .stTabs [data-baseweb="tab"] { background: transparent !important; color: var(--muted) !important; font-size: 13px !important; border-bottom: 2px solid transparent !important; padding: 11px 16px !important; }
 .stTabs [aria-selected="true"] { color: var(--blue) !important; border-bottom-color: var(--blue) !important; }
@@ -374,10 +370,12 @@ details summary, [data-testid="stExpander"] summary { font-size: 14px !important
 
 hr, [data-testid="stDivider"] { border-color: var(--line) !important; margin: 40px 0 !important; }
 
+/* ── Input Layer ── */
 [data-testid="stChatInput"] { background: var(--bg2) !important; border: 1px solid var(--line2) !important; border-radius: var(--r2) !important; padding: 6px 10px !important; box-shadow: 0 2px 18px rgba(0,0,0,0.35) !important; }
 [data-testid="stChatInput"] textarea { background: transparent !important; color: var(--text) !important; font-size: 15px !important; border: none !important; }
 [data-testid="stChatInput"] button { background: var(--grad2) !important; border-radius: 10px !important; }
 
+/* ── Chat Messages ── */
 [data-testid="stChatMessage"] { background: transparent !important; border: none !important; padding: 4px 0 !important; gap: 14px !important; }
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background: var(--bg2) !important; border-radius: var(--r2) !important; padding: 16px 20px !important; border: 1px solid var(--line) !important; margin-bottom: 12px; }
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background: transparent !important; border-left: 2px solid rgba(137,180,248,0.25) !important; padding-left: 20px !important; border-radius: 0 !important; margin-bottom: 12px; }
@@ -406,10 +404,10 @@ HERO_HTML = """
     <h1 class="gem-name">anzum.ai</h1>
     <p class="gem-tagline">Ask me anything about Tanvir Anzum — research, projects, skills, and experience.</p>
     <div class="gem-caps">
-        <div class="gem-cap"><div class="gem-cap-dot" style="background:#89b4f8"></div>Data Pipelines</div>
-        <div class="gem-cap"><div class="gem-cap-dot" style="background:#c084fc"></div>Automation Scrapers</div>
-        <div class="gem-cap"><div class="gem-cap-dot" style="background:#4ade80"></div>Cloud Infrastructure</div>
-        <div class="gem-cap"><div class="gem-cap-dot" style="background:#f472b6"></div>Gemini Workflows</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#89b4f8"></div>Data Analysis</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#c084fc"></div>ETL Pipelines</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#4ade80"></div>Election Scraping</div>
+        <div class="gem-cap"><div class="gem-cap-dot" style="background:#f472b6"></div>Gemini API</div>
     </div>
 </div>
 """
@@ -436,7 +434,7 @@ def main():
         page_title="anzum.ai",
         page_icon="✦",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
 
     # Render CSS and premium header modules
@@ -447,13 +445,6 @@ def main():
     faq_data, personal_context, api_key = load_configuration()
     faq_handler = FAQHandler(faq_data)
     agent = AgenticAI(api_key=api_key, context={"faq": faq_data, "personal": personal_context})
-
-    # Render layout elements
-    try:
-        from ui.sidebar import render_sidebar as actual_sidebar
-        actual_sidebar()
-    except ImportError:
-        render_sidebar()
 
     # FAQ Section
     st.markdown(FAQ_LABEL, unsafe_allow_html=True)
