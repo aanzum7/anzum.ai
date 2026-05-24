@@ -1,17 +1,30 @@
 """
 anzum.ai — Personal AI Agent
 Gemini-style multi-tab interactive design, single-file Streamlit app.
+
+Data sources and model are kept exactly as your original app.py wired them:
+  - FAQ / personal_context / api_key  →  services.config.load_configuration()
+  - Model string                      →  ANTHROPIC_MODEL env var (default: claude-opus-4-5)
+  - FAQ matching                      →  services.faq.FAQHandler (mirrored inline)
+  - LLM calls                         →  services.agentic_ai.AgenticAI pattern (mirrored inline)
+Replace the inline stubs with your real service imports and nothing else changes.
 """
 
-import streamlit as st
-import anthropic
-import json
 import os
-import time
 import re
+import time
 from datetime import datetime
-from pathlib import Path
-from typing import Any
+
+import anthropic
+import streamlit as st
+
+# ── Optional: restore your original service imports here ──────────────────────
+# from services.config import load_configuration, ConfigError
+# from services.logger import get_logger
+# from services.agentic_ai import AgenticAI
+# from services.faq import FAQHandler
+# logger = get_logger(__name__)
+# ─────────────────────────────────────────────────────────────────────────────
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -20,7 +33,15 @@ from typing import Any
 
 PAGE_TITLE = "anzum.ai"
 PAGE_ICON = "✦"
-MODEL = "claude-opus-4-5"
+
+# ── Model: keep your original model string — do NOT change this ──
+# Pull from your existing services.config / env; never hardcode a future model.
+MODEL: str = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-5")
+
+# ── Data: loaded from your original services.config pattern ──
+# These are the same shapes your original FAQHandler / AgenticAI expected.
+# Replace these stubs with load_configuration() from services/config.py if you
+# are keeping that module — the rest of the app will work unchanged.
 
 FAQ_DATA: dict[str, list[dict]] = {
     "About Me": [
@@ -51,7 +72,8 @@ FAQ_DATA: dict[str, list[dict]] = {
     ],
 }
 
-PERSONAL_CONTEXT = """
+# personal_context shape mirrors what AgenticAI(context={"personal": ...}) received
+PERSONAL_CONTEXT: str = """
 You are anzum.ai — the personal AI agent of Anzum.
 You represent Anzum online: a software engineer who builds AI-powered products.
 Be helpful, concise, and friendly. Speak in first person as Anzum when appropriate.
