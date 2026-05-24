@@ -10,209 +10,292 @@ from ui.chat import render_chat
 logger = get_logger(__name__)
 
 # ──────────────────────────────────────────────────────────────────────────────
-# GEMINI-STYLE CSS  — UI only, zero logic changes
+# GEMINI AGENTIC CSS
 # ──────────────────────────────────────────────────────────────────────────────
 
 GEMINI_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600&family=Google+Sans+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Google+Sans+Mono:wght@400;500&display=swap');
 
 :root {
-    --bg:           #0f0f0f;
-    --surface:      #1a1a1a;
-    --surface-2:    #222222;
-    --border:       rgba(255,255,255,0.08);
-    --border-hover: rgba(255,255,255,0.16);
-    --text:         #e8eaed;
-    --muted:        #9aa0a6;
-    --accent:       #8ab4f8;
-    --accent-p:     #a78bfa;
-    --accent-g:     #34d399;
-    --grad:         linear-gradient(135deg, #8ab4f8 0%, #a78bfa 50%, #f472b6 100%);
-    --r:            16px;
-    --r-sm:         10px;
-    --font:         'Google Sans', 'Segoe UI', sans-serif;
-    --mono:         'Google Sans Mono', monospace;
+    --bg:        #131314;
+    --bg2:       #1e1f20;
+    --bg3:       #28292a;
+    --line:      rgba(255,255,255,0.07);
+    --line2:     rgba(255,255,255,0.13);
+    --text:      #e3e3e3;
+    --muted:     #8e918f;
+    --blue:      #89b4f8;
+    --purple:    #c084fc;
+    --teal:      #4ade80;
+    --grad:      linear-gradient(90deg,#89b4f8,#c084fc,#f472b6);
+    --grad2:     linear-gradient(135deg,#89b4f8 0%,#c084fc 60%,#f472b6 100%);
+    --r:         14px;
+    --r2:        20px;
+    --font:      'Google Sans', sans-serif;
+    --mono:      'Google Sans Mono', monospace;
 }
 
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
 html, body, [class*="st-"] { font-family: var(--font) !important; }
-.stApp                      { background: var(--bg) !important; }
-.block-container            { padding: 2rem 2.5rem 4rem !important; max-width: 1140px !important; }
+.stApp { background: var(--bg) !important; }
+.block-container {
+    max-width: 860px !important;
+    padding: 0 2rem 6rem !important;
+    margin: 0 auto !important;
+}
 
+/* ── Hide chrome ── */
 #MainMenu, footer, [data-testid="stToolbar"],
 [data-testid="stDecoration"], .stDeployButton { display: none !important; }
+header[data-testid="stHeader"] { display: none !important; }
 
-header[data-testid="stHeader"] {
-    background: rgba(15,15,15,0.88) !important;
-    backdrop-filter: blur(18px) !important;
-    border-bottom: 1px solid var(--border) !important;
-}
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.09); border-radius: 4px; }
 
-::-webkit-scrollbar       { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-
-/* ── Sidebar ── */
+/* ────────────────────────────────────────────────────
+   SIDEBAR — clean dark panel
+   ──────────────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: var(--surface) !important;
-    border-right: 1px solid var(--border) !important;
+    background: var(--bg2) !important;
+    border-right: 1px solid var(--line) !important;
 }
-[data-testid="stSidebar"] * { color: var(--text) !important; }
+[data-testid="stSidebar"] > div { padding-top: 1.5rem !important; }
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 { color: var(--text) !important; }
+[data-testid="stSidebar"] a   { color: var(--blue) !important; }
+[data-testid="stSidebar"] strong { color: var(--text) !important; }
+[data-testid="stSidebar"] .stMarkdown p { font-size: 13.5px !important; line-height: 1.65 !important; color: #aaa !important; }
+[data-testid="stSidebar"] h3  { font-size: 15px !important; font-weight: 600 !important; color: var(--text) !important; }
 
-/* ── Hero ── */
+/* ────────────────────────────────────────────────────
+   HERO
+   ──────────────────────────────────────────────────── */
 .gem-hero {
+    padding: 56px 0 44px;
     text-align: center;
-    padding: 48px 0 40px;
     position: relative;
 }
+/* subtle background glow */
 .gem-hero::before {
     content: '';
-    position: absolute; top: -60px; left: 50%;
+    position: absolute; top: 0; left: 50%;
     transform: translateX(-50%);
-    width: 560px; height: 360px;
-    background: radial-gradient(ellipse, rgba(138,180,248,0.05) 0%, transparent 70%);
+    width: 520px; height: 300px;
+    background: radial-gradient(ellipse at center,
+        rgba(137,180,248,0.07) 0%,
+        rgba(196,132,252,0.04) 45%,
+        transparent 70%);
     pointer-events: none;
+}
+
+/* Avatar with animated ring */
+.gem-avatar-wrap {
+    position: relative;
+    width: 72px; height: 72px;
+    margin: 0 auto 18px;
 }
 .gem-avatar {
     width: 72px; height: 72px;
-    margin: 0 auto 16px;
     border-radius: 50%;
-    background: var(--grad);
+    background: var(--grad2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 28px; color: #fff; font-weight: 600;
-    position: relative;
+    font-size: 26px; font-weight: 600; color: #fff;
+    position: relative; z-index: 1;
 }
-.gem-avatar::after {
-    content: '';
-    position: absolute; inset: -3px;
+.gem-avatar-ring {
+    position: absolute; inset: -4px;
     border-radius: 50%;
-    background: var(--grad);
-    z-index: -1; opacity: 0.35; filter: blur(8px);
+    background: conic-gradient(from 0deg, #89b4f8, #c084fc, #f472b6, #89b4f8);
+    animation: spin 4s linear infinite;
+    z-index: 0;
 }
-.gem-hero-title {
-    font-size: 40px; font-weight: 600;
-    letter-spacing: -0.8px; line-height: 1.15;
+.gem-avatar-ring::after {
+    content: '';
+    position: absolute; inset: 3px;
+    border-radius: 50%;
+    background: var(--bg);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Thinking badge */
+.gem-thinking-badge {
+    display: inline-flex; align-items: center; gap: 9px;
+    background: rgba(137,180,248,0.07);
+    border: 1px solid rgba(137,180,248,0.18);
+    border-radius: 24px;
+    padding: 6px 16px;
+    margin-bottom: 20px;
+    font-size: 12.5px; font-weight: 500; color: var(--blue);
+    letter-spacing: 0.2px;
+}
+.gem-thinking-dots { display: flex; gap: 4px; align-items: center; }
+.gem-thinking-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--blue);
+    animation: tdot 1.4s ease-in-out infinite;
+}
+.gem-thinking-dots span:nth-child(2) { animation-delay: .2s; background: var(--purple); }
+.gem-thinking-dots span:nth-child(3) { animation-delay: .4s; background: #f472b6; }
+@keyframes tdot {
+    0%,80%,100% { transform: scale(.6); opacity:.35; }
+    40%         { transform: scale(1); opacity:1; }
+}
+
+.gem-name {
+    font-size: 42px; font-weight: 600; letter-spacing: -1px;
     background: var(--grad);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
     margin: 0 0 10px;
+    line-height: 1.1;
 }
-.gem-hero-sub {
-    font-size: 16px; color: var(--muted);
-    max-width: 480px; margin: 0 auto 20px; line-height: 1.65;
+.gem-tagline {
+    font-size: 15.5px; color: var(--muted);
+    max-width: 420px; margin: 0 auto;
+    line-height: 1.65;
 }
-.gem-status-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(52,211,153,0.08);
-    border: 1px solid rgba(52,211,153,0.22);
-    color: var(--accent-g);
-    font-size: 12.5px; font-weight: 500;
-    padding: 5px 14px; border-radius: 24px;
+
+/* ────────────────────────────────────────────────────
+   AGENT CAPABILITY CHIPS  (below hero)
+   ──────────────────────────────────────────────────── */
+.gem-caps {
+    display: flex; flex-wrap: wrap; gap: 9px;
+    justify-content: center;
+    margin: 28px auto 0;
+    max-width: 620px;
 }
-.gem-dot {
+.gem-cap {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--bg2);
+    border: 1px solid var(--line2);
+    border-radius: 24px;
+    padding: 7px 15px;
+    font-size: 12.5px; font-weight: 500; color: var(--muted);
+    transition: all .2s;
+}
+.gem-cap:hover {
+    border-color: rgba(137,180,248,0.35);
+    color: var(--blue);
+    background: rgba(137,180,248,0.06);
+}
+.gem-cap-dot {
     width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent-g);
-    animation: blink 2s infinite;
-}
-@keyframes blink {
-    0%,100% { opacity:1; transform:scale(1); }
-    50%      { opacity:0.4; transform:scale(1.35); }
 }
 
-/* ── Section header ── */
-.gem-section-header {
-    display: flex; align-items: center; gap: 14px;
-    padding: 0 0 24px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+/* ────────────────────────────────────────────────────
+   SECTION LABEL  (replaces st.subheader)
+   ──────────────────────────────────────────────────── */
+.gem-label {
+    display: flex; align-items: center; gap: 10px;
+    margin: 44px 0 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
 }
-.gem-section-icon {
-    width: 42px; height: 42px; border-radius: 12px;
-    background: linear-gradient(135deg, rgba(138,180,248,0.15), rgba(167,139,250,0.15));
+.gem-label-icon {
+    width: 32px; height: 32px; border-radius: 9px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
+    font-size: 16px;
+    background: var(--bg3);
+    border: 1px solid var(--line2);
+    flex-shrink: 0;
 }
-.gem-section-title {
-    font-size: 20px; font-weight: 600;
-    background: var(--grad);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0; line-height: 1.2;
-}
-.gem-section-sub {
-    font-size: 13px; color: var(--muted); margin: 3px 0 0;
+.gem-label-text {
+    font-size: 14px; font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-/* ── FAQ tabs ── */
+/* ────────────────────────────────────────────────────
+   FAQ  tabs + expanders
+   ──────────────────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] {
     background: transparent !important;
-    border-bottom: 1px solid var(--border) !important;
+    border-bottom: 1px solid var(--line) !important;
     gap: 0 !important; padding: 0 !important;
+    margin-bottom: 4px !important;
 }
 .stTabs [data-baseweb="tab"] {
     background: transparent !important;
     color: var(--muted) !important;
     font-family: var(--font) !important;
-    font-size: 13.5px !important; font-weight: 500 !important;
+    font-size: 13px !important; font-weight: 500 !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    padding: 12px 18px !important;
+    padding: 11px 16px !important;
     border-radius: 0 !important;
-    transition: color .18s !important;
+    transition: color .15s !important;
 }
 .stTabs [aria-selected="true"] {
-    color: var(--accent) !important;
-    border-bottom-color: var(--accent) !important;
+    color: var(--blue) !important;
+    border-bottom-color: var(--blue) !important;
 }
 .stTabs [data-baseweb="tab-highlight"] { display: none !important; }
-.stTabs [data-baseweb="tab-panel"]     { background: transparent !important; padding: 20px 0 0 !important; }
+.stTabs [data-baseweb="tab-panel"] {
+    background: transparent !important;
+    padding: 16px 0 0 !important;
+}
 
-/* ── Expanders (FAQ cards) ── */
 details, [data-testid="stExpander"] {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
+    background: var(--bg2) !important;
+    border: 1px solid var(--line) !important;
     border-radius: var(--r) !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 10px !important;
     overflow: hidden;
-    transition: border-color .2s;
+    transition: border-color .2s, background .2s;
 }
 details:hover, [data-testid="stExpander"]:hover {
-    border-color: var(--border-hover) !important;
-}
-details summary, [data-testid="stExpander"] summary {
-    font-size: 14.5px !important; font-weight: 500 !important;
-    color: var(--text) !important;
-    padding: 16px 20px !important;
-    cursor: pointer;
+    background: var(--bg3) !important;
+    border-color: var(--line2) !important;
 }
 details[open], [data-testid="stExpander"][open] {
-    border-color: rgba(138,180,248,0.3) !important;
+    border-color: rgba(137,180,248,0.28) !important;
+    background: var(--bg2) !important;
+}
+details summary,
+[data-testid="stExpander"] summary {
+    font-size: 14px !important; font-weight: 500 !important;
+    color: var(--text) !important;
+    padding: 15px 18px !important;
+    cursor: pointer; list-style: none;
 }
 [data-testid="stExpander"] > div > div {
-    padding: 0 20px 18px !important;
-    color: var(--muted) !important;
-    font-size: 14px !important;
-    line-height: 1.7 !important;
+    padding: 2px 18px 16px !important;
+    color: #9e9e9e !important;
+    font-size: 13.5px !important;
+    line-height: 1.72 !important;
 }
 
-/* ── Divider ── */
+/* ────────────────────────────────────────────────────
+   DIVIDER
+   ──────────────────────────────────────────────────── */
 hr, [data-testid="stDivider"] {
-    border-color: var(--border) !important;
-    margin: 36px 0 !important;
+    border-color: var(--line) !important;
+    margin: 40px 0 !important;
 }
 
-/* ── Chat input ── */
+/* ────────────────────────────────────────────────────
+   CHAT INPUT  — Gemini bottom bar style
+   ──────────────────────────────────────────────────── */
 [data-testid="stChatInput"] {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 14px !important;
-    transition: border-color .2s;
+    background: var(--bg2) !important;
+    border: 1px solid var(--line2) !important;
+    border-radius: var(--r2) !important;
+    padding: 6px 10px !important;
+    transition: border-color .2s, box-shadow .2s;
+    box-shadow: 0 2px 18px rgba(0,0,0,0.35) !important;
 }
 [data-testid="stChatInput"]:focus-within {
-    border-color: rgba(138,180,248,0.4) !important;
-    box-shadow: 0 0 0 3px rgba(138,180,248,0.07) !important;
+    border-color: rgba(137,180,248,0.45) !important;
+    box-shadow: 0 0 0 3px rgba(137,180,248,0.08), 0 2px 18px rgba(0,0,0,0.35) !important;
 }
 [data-testid="stChatInput"] textarea {
     background: transparent !important;
@@ -220,105 +303,222 @@ hr, [data-testid="stDivider"] {
     font-family: var(--font) !important;
     font-size: 15px !important;
     border: none !important; box-shadow: none !important;
+    caret-color: var(--blue) !important;
+}
+[data-testid="stChatInput"] textarea::placeholder { color: #555 !important; }
+
+/* send button */
+[data-testid="stChatInput"] button {
+    background: var(--grad2) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    width: 36px !important; height: 36px !important;
+    color: #fff !important;
 }
 
-/* ── Chat messages ── */
+/* ────────────────────────────────────────────────────
+   CHAT MESSAGES
+   ──────────────────────────────────────────────────── */
 [data-testid="stChatMessage"] {
     background: transparent !important;
     border: none !important;
-    padding: 6px 0 !important;
+    padding: 4px 0 !important;
+    gap: 14px !important;
 }
+
+/* user turn */
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
-    background: rgba(138,180,248,0.04) !important;
-    border-radius: var(--r) !important;
-    padding: 14px 18px !important;
+    background: var(--bg2) !important;
+    border-radius: var(--r2) !important;
+    padding: 16px 20px !important;
+    margin-bottom: 6px !important;
+    border: 1px solid var(--line) !important;
 }
+
+/* assistant turn */
 [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
-    background: var(--surface) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--r) !important;
-    padding: 14px 18px !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 16px 4px !important;
+    margin-bottom: 6px !important;
+    border-left: 2px solid rgba(137,180,248,0.25) !important;
+    padding-left: 20px !important;
+    border-radius: 0 !important;
 }
+
 [data-testid="stChatMessage"] p,
 [data-testid="stChatMessage"] li {
     color: var(--text) !important;
-    font-size: 15px !important; line-height: 1.75 !important;
+    font-size: 15px !important; line-height: 1.78 !important;
 }
+[data-testid="stChatMessage"] strong { color: #fff !important; font-weight: 600 !important; }
 [data-testid="stChatMessage"] code {
-    background: rgba(255,255,255,0.07) !important;
-    color: var(--accent) !important;
+    background: rgba(255,255,255,0.06) !important;
+    color: #93c5fd !important;
     font-family: var(--mono) !important;
-    border-radius: 5px !important; padding: 1px 6px !important; font-size: 13px !important;
+    border-radius: 6px !important;
+    padding: 2px 7px !important;
+    font-size: 13px !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
 }
-[data-testid="chatAvatarIcon-user"] {
-    background: rgba(138,180,248,0.14) !important;
-    color: var(--accent) !important;
-    border: 1px solid rgba(138,180,248,0.25) !important;
-}
-[data-testid="chatAvatarIcon-assistant"] {
-    background: var(--grad) !important;
-    color: #fff !important; border: none !important;
+[data-testid="stChatMessage"] pre {
+    background: var(--bg2) !important;
+    border: 1px solid var(--line2) !important;
+    border-radius: var(--r) !important;
+    padding: 16px !important;
 }
 
-/* ── Buttons ── */
+/* Avatars */
+[data-testid="chatAvatarIcon-user"] {
+    background: rgba(137,180,248,0.12) !important;
+    color: var(--blue) !important;
+    border: 1px solid rgba(137,180,248,0.22) !important;
+    border-radius: 50% !important;
+}
+[data-testid="chatAvatarIcon-assistant"] {
+    background: var(--grad2) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 50% !important;
+}
+
+/* ────────────────────────────────────────────────────
+   BUTTONS
+   ──────────────────────────────────────────────────── */
 .stButton > button {
-    background: var(--surface-2) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
+    background: var(--bg3) !important;
+    color: var(--muted) !important;
+    border: 1px solid var(--line2) !important;
     border-radius: 24px !important;
     font-family: var(--font) !important;
-    font-size: 13.5px !important; font-weight: 500 !important;
-    padding: 8px 22px !important;
-    transition: background .18s, border-color .18s, transform .15s !important;
+    font-size: 13px !important; font-weight: 500 !important;
+    padding: 7px 20px !important;
+    transition: all .18s !important;
 }
 .stButton > button:hover {
-    background: rgba(138,180,248,0.1) !important;
-    border-color: rgba(138,180,248,0.35) !important;
-    color: var(--accent) !important;
+    background: rgba(137,180,248,0.08) !important;
+    border-color: rgba(137,180,248,0.32) !important;
+    color: var(--blue) !important;
     transform: translateY(-1px) !important;
 }
 
-/* ── Text inputs ── */
+/* ────────────────────────────────────────────────────
+   TEXT INPUTS (sidebar etc.)
+   ──────────────────────────────────────────────────── */
 .stTextInput > div > div > input,
-.stTextArea  > div > div > textarea {
-    background: var(--surface-2) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--r-sm) !important;
+.stTextArea > div > div > textarea {
+    background: var(--bg3) !important;
+    border: 1px solid var(--line2) !important;
+    border-radius: 10px !important;
     color: var(--text) !important;
-    font-family: var(--font) !important;
-    font-size: 14px !important;
+    font-family: var(--font) !important; font-size: 14px !important;
 }
 .stTextInput > div > div > input:focus,
-.stTextArea  > div > div > textarea:focus {
-    border-color: rgba(138,180,248,0.4) !important;
-    box-shadow: 0 0 0 2px rgba(138,180,248,0.08) !important;
+.stTextArea > div > div > textarea:focus {
+    border-color: rgba(137,180,248,0.4) !important;
+    box-shadow: 0 0 0 2px rgba(137,180,248,0.08) !important;
 }
-label { color: var(--muted) !important; font-size: 12.5px !important; font-weight: 500 !important; }
+label {
+    color: var(--muted) !important;
+    font-size: 12px !important; font-weight: 500 !important;
+    text-transform: uppercase !important; letter-spacing: .7px !important;
+}
 
-/* ── Markdown ── */
-.stMarkdown p, .stMarkdown li { color: var(--text) !important; font-size: 15px !important; line-height: 1.75 !important; }
-.stMarkdown a { color: var(--accent) !important; text-decoration: none !important; }
-.stMarkdown strong { color: var(--text) !important; font-weight: 600 !important; }
+/* ────────────────────────────────────────────────────
+   MARKDOWN
+   ──────────────────────────────────────────────────── */
+.stMarkdown p, .stMarkdown li { color: var(--text) !important; font-size: 14.5px !important; line-height: 1.75 !important; }
+.stMarkdown a  { color: var(--blue) !important; text-decoration: none !important; }
+.stMarkdown a:hover { text-decoration: underline !important; }
+.stMarkdown strong { color: #fff !important; font-weight: 600 !important; }
 .stMarkdown code {
-    background: rgba(255,255,255,0.07) !important;
-    color: var(--accent) !important;
+    background: rgba(255,255,255,0.06) !important;
+    color: #93c5fd !important;
     font-family: var(--mono) !important;
     border-radius: 5px !important; padding: 1px 6px !important; font-size: 13px !important;
 }
 
-/* ── Alerts ── */
+/* ────────────────────────────────────────────────────
+   ALERTS / ERRORS
+   ──────────────────────────────────────────────────── */
 [data-testid="stAlert"] {
-    background: rgba(244,75,95,0.07) !important;
-    border: 1px solid rgba(244,75,95,0.22) !important;
-    border-radius: var(--r-sm) !important;
-    color: #f87171 !important;
+    background: rgba(244,75,95,0.06) !important;
+    border: 1px solid rgba(244,75,95,0.2) !important;
+    border-radius: 12px !important;
+    color: #fca5a5 !important;
 }
+
+/* suppress all h3 default Streamlit rendering */
+h3 { display: none !important; }
 </style>
+"""
+
+# ──────────────────────────────────────────────────────────────────────────────
+# HERO HTML
+# ──────────────────────────────────────────────────────────────────────────────
+
+HERO_HTML = """
+<div class="gem-hero">
+    <div class="gem-avatar-wrap">
+        <div class="gem-avatar-ring"></div>
+        <div class="gem-avatar">A</div>
+    </div>
+
+    <div class="gem-thinking-badge">
+        <div class="gem-thinking-dots">
+            <span></span><span></span><span></span>
+        </div>
+        Ready to assist
+    </div>
+
+    <h1 class="gem-name">anzum.ai</h1>
+    <p class="gem-tagline">
+        Ask me anything about Tanvir Anzum —
+        research, projects, skills, and experience.
+    </p>
+
+    <div class="gem-caps">
+        <div class="gem-cap">
+            <div class="gem-cap-dot" style="background:#89b4f8"></div>
+            Research & Papers
+        </div>
+        <div class="gem-cap">
+            <div class="gem-cap-dot" style="background:#c084fc"></div>
+            ML / NLP Projects
+        </div>
+        <div class="gem-cap">
+            <div class="gem-cap-dot" style="background:#4ade80"></div>
+            Career Journey
+        </div>
+        <div class="gem-cap">
+            <div class="gem-cap-dot" style="background:#f472b6"></div>
+            Consulting & Work
+        </div>
+        <div class="gem-cap">
+            <div class="gem-cap-dot" style="background:#fbbf24"></div>
+            Skills & Technologies
+        </div>
+    </div>
+</div>
+"""
+
+FAQ_LABEL = """
+<div class="gem-label">
+    <div class="gem-label-icon">💡</div>
+    <span class="gem-label-text">Frequently Asked Questions</span>
+</div>
+"""
+
+CHAT_LABEL = """
+<div class="gem-label">
+    <div class="gem-label-icon">✦</div>
+    <span class="gem-label-text">Ask anzum.ai</span>
+</div>
 """
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# APP  — identical logic to your original, only visual wrappers added
+# ORIGINAL BUILD / MAIN
 # ──────────────────────────────────────────────────────────────────────────────
 
 def build_app():
@@ -337,24 +537,8 @@ def main():
         initial_sidebar_state="expanded",
     )
 
-    # Inject Gemini CSS
     st.markdown(GEMINI_CSS, unsafe_allow_html=True)
-
-    # Hero strip
-    st.markdown(
-        """
-        <div class="gem-hero">
-            <div class="gem-avatar">A</div>
-            <div class="gem-status-pill">
-                <div class="gem-dot"></div>
-                Available for projects
-            </div>
-            <h1 class="gem-hero-title">anzum.ai</h1>
-            <p class="gem-hero-sub">Your personal AI agent — ask me anything about Anzum's work, skills, and projects.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(HERO_HTML, unsafe_allow_html=True)
 
     try:
         faq_handler, agent, faq_data = build_app()
@@ -367,39 +551,14 @@ def main():
         logger.exception("Unexpected error during startup.")
         st.stop()
 
-    # Sidebar — original
     render_sidebar()
 
-    # FAQ section
-    st.markdown(
-        """
-        <div class="gem-section-header">
-            <div class="gem-section-icon">💡</div>
-            <div>
-                <p class="gem-section-title">Frequently Asked Questions</p>
-                <p class="gem-section-sub">Quick answers about Anzum's work and background</p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(FAQ_LABEL, unsafe_allow_html=True)
     render_faq_tabs(faq_data)
 
     st.divider()
 
-    # Chat section
-    st.markdown(
-        """
-        <div class="gem-section-header">
-            <div class="gem-section-icon">💬</div>
-            <div>
-                <p class="gem-section-title">Chat with anzum.ai</p>
-                <p class="gem-section-sub">Powered by Claude — ask me anything</p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(CHAT_LABEL, unsafe_allow_html=True)
     render_chat(faq_handler=faq_handler, agent=agent)
 
 
