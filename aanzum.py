@@ -402,7 +402,7 @@ HERO_HTML = """
         Ready to assist
     </div>
     <h1 class="gem-name">anzum.ai</h1>
-    <p class="gem-tagline">Ask me anything about Tanvir Anzum — research, projects, skills, and experience.</p>
+    <p class="gem-tagline" style="max-width: 680px;">Driven by Data, Inspired by Impact | AI & Analytics | Recommendation Models | Turning Insights into Action</p>
     <div class="gem-caps">
         <div class="gem-cap"><div class="gem-cap-dot" style="background:#89b4f8"></div>Data Analysis</div>
         <div class="gem-cap"><div class="gem-cap-dot" style="background:#c084fc"></div>ETL Pipelines</div>
