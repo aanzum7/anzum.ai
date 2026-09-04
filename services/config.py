@@ -3,48 +3,82 @@
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
-import toml
 import os
+from typing import Dict, List, Tuple
+import streamlit as st
+import toml
+
+from config.settings import SECRETS_PATH
+from services.logger import get_logger
+
+logger = get_logger(__name__)
 
 class ConfigError(Exception):
-    """Raised when configuration cannot be loaded or is invalid."""
+    """Raised when configuration, data, or credentials cannot be loaded."""
 
-def _validate_config(secrets: Dict) -> Tuple[List[Dict], Dict, str]:
+
+def _get_secrets_dict() -> Dict:
+    """Retrieve full secrets dictionary from st.secrets or local secrets.toml."""
+    # 1. Check native st.secrets (Streamlit runtime / Cloud deployment)
     try:
-        faq_data = secrets["faq"]["questions"]
-        personal_context = secrets["personal"]["data"]
-        api_key = secrets["genai"]["api_key"]
+        if hasattr(st, "secrets") and len(st.secrets) > 0:
+            return {
+                k: dict(v) if hasattr(v, "to_dict") or isinstance(v, dict) else v
+                for k, v in st.secrets.items()
+            }
     except Exception as e:
-        raise ConfigError(f"Missing or malformed keys in secrets.toml: {e}")
+        logger.debug(f"Unable to read from st.secrets directly: {e}")
 
-    if not isinstance(faq_data, list) or not all(isinstance(x, dict) for x in faq_data):
-        raise ConfigError("faq.questions must be a list of dicts.")
-    if not isinstance(personal_context, dict):
-        raise ConfigError("personal.data must be a dict.")
-    if not api_key or not isinstance(api_key, str):
-        raise ConfigError("genai.api_key must be a non-empty string.")
+    # 2. Check local secrets.toml
+    if os.path.exists(SECRETS_PATH):
+        try:
+            return toml.load(str(SECRETS_PATH))
+        except Exception as e:
+            logger.error(f"Failed to parse {SECRETS_PATH}: {e}")
 
-    return faq_data, personal_context, api_key
+    return {}
 
+
+@st.cache_data(show_spinner=False)
 def load_configuration() -> Tuple[List[Dict], Dict, str]:
     """
-    Load configuration from .streamlit/secrets.toml and validate.
-    Returns (faq_data, personal_context, api_key).
+    Load credentials, personal context, and FAQs strictly from secrets (zero git exposure).
+    Cached across reruns for optimal performance.
     """
-    secrets_path = os.path.join(".streamlit", "secrets.toml")
-    if not os.path.exists(secrets_path):
+    secrets_data = _get_secrets_dict()
+
+    # 1. Resolve API Key
+    api_key = None
+    if "genai" in secrets_data and "api_key" in secrets_data["genai"]:
+        api_key = str(secrets_data["genai"]["api_key"]).strip()
+    elif "GEMINI_API_KEY" in secrets_data:
+        api_key = str(secrets_data["GEMINI_API_KEY"]).strip()
+    else:
+        for env_var in ("GEMINI_API_KEY", "GENAI_API_KEY"):
+            val = os.environ.get(env_var)
+            if val:
+                api_key = val.strip()
+                break
+
+    if not api_key:
         raise ConfigError(
-            "`.streamlit/secrets.toml` not found. Please create it using the schema below:\n\n"
-            "[genai]\napi_key = \"YOUR_GEMINI_API_KEY\"\n\n"
-            "[personal]\n  [personal.data]\n  name = \"Tanvir Anzum\"\n  # ... other fields\n\n"
-            "[faq]\n  questions = [\n    { category = \"Experience\", question = \"...\", answer = \"...\" },\n  ]"
+            "Gemini API Key not found!\n"
+            "Please provide it in `.streamlit/secrets.toml` under `[genai] api_key`."
         )
 
-    try:
-        secrets = toml.load(secrets_path)
-    except Exception as e:
-        raise ConfigError(f"Failed to parse secrets.toml: {e}")
+    # 2. Resolve Personal Context (Strictly from secrets for privacy)
+    personal_context = {}
+    if "personal" in secrets_data and "data" in secrets_data["personal"]:
+        personal_context = secrets_data["personal"]["data"]
+    elif "personal" in secrets_data and isinstance(secrets_data["personal"], dict):
+        personal_context = secrets_data["personal"]
 
-    return _validate_config(secrets)
+    # 3. Resolve FAQs (Strictly from secrets for privacy)
+    faq_data = []
+    if "faq" in secrets_data and "questions" in secrets_data["faq"]:
+        faq_data = secrets_data["faq"]["questions"]
+    elif "faq" in secrets_data and isinstance(secrets_data["faq"], list):
+        faq_data = secrets_data["faq"]
 
+    logger.debug(f"Loaded configuration from secrets: {len(faq_data)} FAQs, {len(personal_context)} profile fields.")
+    return faq_data, personal_context, api_key

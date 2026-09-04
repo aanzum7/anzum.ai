@@ -3,83 +3,99 @@
 # ──────────────────────────────────────────────────────────────────────────────
 from __future__ import annotations
 
-from typing import Dict
-import logging
+import json
+import warnings
+from typing import Any, Dict, Generator, Optional
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", message=".*google.generativeai.*")
 
 import google.generativeai as genai
 
+from config.settings import DEFAULT_GEMINI_MODEL, GENERATION_CONFIG
 from services.logger import get_logger
 
 logger = get_logger(__name__)
 
 class AgenticAI:
     """
-    Thin wrapper around Google Gemini for chat-style responses.
-
-    - Initializes client once.
-    - Provides a resilient `generate_response` with a one-time retry.
+    Intelligent Assistant persona wrapper around Google Gemini.
+    Configured with native system_instruction and streaming output capabilities.
     """
 
-    def __init__(self, api_key: str, context: Dict):
+    def __init__(self, api_key: str, context: Dict[str, Any]):
         self.api_key = api_key
         self.context = context
-        self.model = None
+        self.model: Optional[genai.GenerativeModel] = None
         self.chat_session = None
         self._configure_ai()
+
+    def _format_context(self) -> str:
+        """Format personal and FAQ context cleanly for the system instruction."""
+        personal = self.context.get("personal", {})
+        faq = self.context.get("faq", [])
+
+        personal_str = json.dumps(personal, indent=2, default=str)
+        faq_str = json.dumps(faq, indent=2, default=str)
+
+        return (
+            "You are the official AI Digital Twin and Portfolio Guide of Tanvir Anzum.\n"
+            "Your purpose is to answer visitor questions regarding Tanvir's experience, background, research, projects, skills, and vision.\n\n"
+            "=== TONALITY & IDENTITY ===\n"
+            "- Speak in the first person ('I', 'my') as Tanvir Anzum.\n"
+            "- Maintain an articulate, humble, innovative, and professional tone.\n"
+            "- CRITICAL RULE: Keep answers SHORT, DIRECT, and CONCISE (typically 2 to 4 sentences or 2 to 3 brief bullet points).\n"
+            "- NEVER generate long walls of text or encyclopedic explanations.\n"
+            "- If links or projects are relevant, provide a 1-line summary with the direct clickable markdown link.\n\n"
+            f"=== VERIFIED BACKGROUND & CONTEXT (CONFIDENTIAL) ===\n{personal_str}\n\n"
+            f"=== KNOWLEDGE BASE & FAQS ===\n{faq_str}\n"
+        )
 
     def _configure_ai(self):
         try:
             genai.configure(api_key=self.api_key)
+            system_instruction = self._format_context()
+
             self.model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash-lite",
-                generation_config={
-                    "temperature": 0.5,
-                    "top_p": 0.9,
-                    "max_output_tokens": 512,
-                },
+                model_name=DEFAULT_GEMINI_MODEL,
+                generation_config=GENERATION_CONFIG,
+                system_instruction=system_instruction,
             )
-            self.chat_session = self.model.start_chat()
-            logger.info("Gemini model configured and chat session started.")
+            self.chat_session = self.model.start_chat(history=[])
+            logger.debug("Gemini model initialized with system instruction.")
         except Exception as e:
-            logger.exception("Failed to configure AI.")
+            logger.exception(f"Failed to configure Gemini AI: {e}")
             raise
 
     def reset(self):
-        """Reset chat (use after 'Start Over')."""
-        logger.info("Resetting chat session.")
-        self.chat_session = self.model.start_chat()
+        """Reset chat session state."""
+        logger.debug("Resetting Gemini chat session.")
+        if self.model:
+            self.chat_session = self.model.start_chat(history=[])
 
-    def _build_prompt(self, user_input: str) -> str:
-        return (
-            f"Based on Tanvir Anzum's profile and expertise (from context links), answer the user's question.\n\n"
-            f"FAQ Context:\n{self.context.get('faq')}\n\n"
-            f"Personal Context:\n{self.context.get('personal')}\n\n"
-            f"User Question:\n{user_input}\n\n"
-            "Instructions for AI:\n"
-            "- Respond as an AI version of Tanvir Anzum.\n"
-            "- Keep answers simple, concise, conversational, and professional.\n"
-            "- Reply in the style and format asked by the user.\n"
-            "- If relevant, provide links as interactive buttons with clear labels and URLs that the user can click directly.\n"
-            "- Only include links that are contextually appropriate."
-        )
-
-    def generate_response(self, user_input: str) -> str:
+    def stream_response(self, user_input: str) -> Generator[str, None, None]:
+        """
+        Yield streaming text chunks for st.write_stream().
+        Falls back gracefully with retry if necessary.
+        """
         try:
-            prompt = self._build_prompt(user_input)
+            if not self.chat_session:
+                self.reset()
 
-            response = self.chat_session.send_message(prompt)
-            if response and hasattr(response, "text") and response.text:
-                return response.text.strip()
+            response = self.chat_session.send_message(user_input, stream=True)
+            has_content = False
+            for chunk in response:
+                if chunk and hasattr(chunk, "text") and chunk.text:
+                    has_content = True
+                    yield chunk.text
 
-            # Retry once on empty/invalid
-            logger.warning("Empty/invalid response. Retrying once with a fresh chat session.")
-            self.reset()
-            response_retry = self.chat_session.send_message(prompt)
-            if response_retry and hasattr(response_retry, "text") and response_retry.text:
-                return response_retry.text.strip()
-
-            return "🤖 Sorry, I couldn't generate a response."
+            if not has_content:
+                yield "I apologize, but I couldn't generate a clear response for that query. Could you try rephrasing?"
 
         except Exception as e:
-            logger.exception("Error generating response.")
-            return f"⚠️ Error: {e}"
+            logger.exception("Error during streaming response generation.")
+            yield f"⚠️ *I encountered an issue connecting to Gemini: {e}*"
+
+    def generate_response(self, user_input: str) -> str:
+        """Synchronous response generation."""
+        return "".join(list(self.stream_response(user_input)))

@@ -6,99 +6,114 @@ from __future__ import annotations
 from typing import Dict, List
 import streamlit as st
 
+from config.settings import SUGGESTION_CHIPS, FAQ_SIMILARITY_THRESHOLD, AVATAR_PATH
 from services.agentic_ai import AgenticAI
 from services.faq import FAQHandler
 from services.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Define type alias for readability
-ChatHistory = List[Dict[str, str]]
-
-FOOTER_CSS = """
-<style>
-.center-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-top: 20px;
-}
-.center-button {
-    width: 50%;
-    min-width: 300px;
-    padding: 8px 16px;
-    background-color: #f0f2f6;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    text-align: center;
-    transition: background-color 0.3s;
-}
-.center-button:hover { background-color: #e0e2e6; }
-</style>
-"""
-
-# Ensure chat history exists in session state
 def _ensure_session_state() -> None:
+    """Initialize necessary session state variables."""
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []  # ✅ fixed: removed invalid annotation
+        st.session_state.chat_history = []
+    if "queued_prompt" not in st.session_state:
+        st.session_state.queued_prompt = None
+    if "feedback_given" not in st.session_state:
+        st.session_state.feedback_given = False
 
-
-# Process query through FAQ or AI
-def _process_user_query(user_query: str, faq_handler: FAQHandler, agent: AgenticAI) -> str:
-    q, a = faq_handler.find_similar_question(user_query)
-    if a:
-        return f"🔍 **FAQ Match:** *{q}*\n\n{a}"
-    return agent.generate_response(user_query)
-
-
-# Render full chat interface
 def render_chat(faq_handler: FAQHandler, agent: AgenticAI) -> None:
+    """Render the state-of-the-art interactive chat UI with streaming and quick prompt pills."""
     _ensure_session_state()
 
-    # Render chat history
+    # 1. Quick suggestion prompt chips (if history is brief or user wants inspiration)
+    st.markdown(
+        """
+        <div class="chip-label">
+            <span>✨</span> Quick Questions to Explore
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    chip_cols = st.columns(len(SUGGESTION_CHIPS))
+    for i, (label, prompt_text) in enumerate(SUGGESTION_CHIPS):
+        with chip_cols[i]:
+            if st.button(label, key=f"chip_{i}", use_container_width=True):
+                st.session_state.queued_prompt = prompt_text
+                st.rerun()
+
+    st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
+
+    # 2. Render Existing Chat History
     for chat in st.session_state.chat_history:
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="👤"):
             st.markdown(chat["user_query"])
-        with st.chat_message("assistant"):
+
+        with st.chat_message("assistant", avatar=str(AVATAR_PATH)):
+            if chat.get("is_faq"):
+                st.markdown(
+                    f"<div class='faq-match-badge'>✓ Verified Knowledge Base Match: <em>{chat.get('faq_question', '')}</em></div>",
+                    unsafe_allow_html=True,
+                )
             st.markdown(chat["bot_response"])
 
-    # User input
-    user_query = st.chat_input("What's on your mind ?")
+    # 3. Determine User Input (Direct Input or Queued Chip)
+    user_query = st.chat_input("Ask anything about Tanvir's work, experience, or AI research...")
 
+    if st.session_state.queued_prompt:
+        user_query = st.session_state.queued_prompt
+        st.session_state.queued_prompt = None
+
+    # 4. Handle Incoming Query
     if user_query:
-        with st.chat_message("user"):
+        # Display user message
+        with st.chat_message("user", avatar="👤"):
             st.markdown(user_query)
 
-        with st.spinner("Let me craft a thoughtful reply just for you... 🤖"):
-            response = _process_user_query(user_query, faq_handler, agent)
+        # Assistant processing with Streaming or FAQ Match
+        with st.chat_message("assistant", avatar=str(AVATAR_PATH)):
+            faq_match = faq_handler.find_match_details(user_query, threshold=FAQ_SIMILARITY_THRESHOLD)
 
-        with st.chat_message("assistant"):
-            st.markdown(response)
+            if faq_match:
+                q = faq_match["question"]
+                a = faq_match["answer"]
+                st.markdown(
+                    f"<div class='faq-match-badge'>✓ Verified Knowledge Base Match: <em>{q}</em></div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(a)
+                st.session_state.chat_history.append({
+                    "user_query": user_query,
+                    "bot_response": a,
+                    "is_faq": True,
+                    "faq_question": q,
+                })
+            else:
+                # Real-time token streaming
+                response_text = st.write_stream(agent.stream_response(user_query))
+                st.session_state.chat_history.append({
+                    "user_query": user_query,
+                    "bot_response": response_text,
+                    "is_faq": False,
+                })
 
-        st.session_state.chat_history.append(
-            {"user_query": user_query, "bot_response": response}
-        )
-
-    # Footer / feedback section
-    st.markdown(FOOTER_CSS, unsafe_allow_html=True)
-
+    # 5. Chat Footer Controls (Feedback & Reset)
     if st.session_state.chat_history:
-        st.markdown("<div class='center-container'>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 28px 0 16px 0; border-color: rgba(255,255,255,0.06);'>", unsafe_allow_html=True)
+        col_feedback, col_reset = st.columns([2, 1])
 
-        feedback = st.radio(
-            "Feedback",
-            ["👍", "👎"],
-            index=None,
-            horizontal=True,
-            key="overall_feedback",
-        )
-        if feedback:
-            logger.info(f"Overall Feedback: {feedback}")
+        with col_feedback:
+            feedback = st.feedback("thumbs", key="chat_feedback")
+            if feedback is not None and not st.session_state.feedback_given:
+                st.session_state.feedback_given = True
+                rating = "Helpful (👍)" if feedback == 1 else "Not Helpful (👎)"
+                logger.debug(f"User submitted rating: {rating}")
+                st.toast("Thank you for your feedback! 🙏", icon="✨")
 
-        if st.button("♻️ Start Over", use_container_width=True):
-            st.session_state.chat_history = []
-            agent.reset()
-            st.rerun()
+        with col_reset:
+            if st.button("♻️ Reset Conversation", use_container_width=True):
+                st.session_state.chat_history = []
+                st.session_state.feedback_given = False
+                agent.reset()
+                st.rerun()
