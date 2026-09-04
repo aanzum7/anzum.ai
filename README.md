@@ -1,89 +1,106 @@
-# anzum.ai - Personalized AI Assistant
+# anzum.ai — Personalized AI Digital Twin
 
-A Streamlit-based web application that provides personalized responses, FAQs, and advanced AI-generated answers. The app leverages Generative AI (Gemini) to deliver context-aware, accurate, and professional replies based on predefined FAQs and personal context.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://anzum-ai.streamlit.app/?embed_options=dark_theme)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Powered by Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-blue)](https://ai.google.dev/)
 
-## Features
-- **FAQ Matching**: Matches user queries with the most relevant FAQ and provides predefined answers.
-- **Generative AI Responses**: Uses Gemini AI to generate detailed, context-aware responses for unmatched queries.
-- **Language Detection**: Ensures responses are in the same language as the user query.
-- **Customizable Context**: Easily update FAQs and personal data for tailored responses.
+A state-of-the-art, personalized AI Digital Twin and portfolio assistant for **Tanvir Anzum**. The application delivers real-time conversational responses powered by **Google Gemini 2.5 Flash**, verified knowledge base matching, interactive question chips, and a modern glassmorphic interface.
 
-## Prerequisites
-Before running the app, ensure you have the following:
-- Python 3.7 or higher
-- `pip` (Python package installer)
-- A valid **Generative AI API key** (e.g., Gemini)
+---
 
-## Installation
+## ✨ Key Features
+
+- **⚡ Real-Time Streaming Chat**: Instant typewriter-style response streaming via Gemini 2.5 Flash.
+- **🔍 Intelligent Knowledge Base Matching**: Hybrid semantic search (token intersection, Jaccard similarity, sequence ratio) for verified FAQ answers.
+- **💎 Premium Glassmorphism UI**:
+  - Dark mode with glowing radial accents and Google Fonts (`Outfit` & `Plus Jakarta Sans`).
+  - Active pulse status indicators (`AI Twin Online`).
+  - Interactive quick-prompt suggestion chips.
+  - Collapsible FAQ knowledge cards with category badges and instant search filtering.
+- **🧠 Persistent Multi-Turn Memory**: Conversational memory preserved across Streamlit reruns.
+- **🌐 Dynamic Profile & Social Integration**: Dynamic link cards, current focus badges, research dossiers, and contact drawer.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+```
+anzum.ai/
+├── .streamlit/
+│   └── secrets.toml        # STRICTLY PRIVATE: API key, FAQs & Personal Profile Data [GITIGNORED]
+├── config/
+│   ├── __init__.py
+│   ├── config.toml         # Theme tokens, server & client settings
+│   └── settings.py         # Application metadata, paths, model & UI constants
+├── logo/
+│   └── aanzum7.png         # Profile avatar & favicon
+├── services/
+│   ├── __init__.py
+│   ├── agentic_ai.py       # Gemini 2.5 Flash wrapper with system_instruction & streaming
+│   ├── config.py           # Cached loader reading credentials & context securely
+│   ├── faq.py              # Semantic FAQ retriever with hybrid heuristics
+│   └── logger.py           # Centralized structured logger
+├── ui/
+│   ├── __init__.py
+│   ├── chat.py             # Chat interface with streaming & quick prompt chips
+│   ├── faq_view.py         # Searchable knowledge base with category tabs
+│   ├── sidebar.py          # Dynamic profile card with glowing avatar & social links
+│   └── styles.py           # Global CSS design tokens & animations
+├── aanzum.py               # Main application entry point
+├── playground.py           # Developer sandbox runner
+├── Procfile                # Heroku deployment configuration
+├── requirements.txt        # Python package dependencies
+└── README.md               # Project documentation
+```
+
+---
+
+## 🚀 Quick Start
+
 ### 1. Clone the repository:
 ```bash
 git clone https://github.com/aanzum7/anzum.ai.git
 cd anzum.ai
 ```
 
-### 2. Set up a Python virtual environment (optional but recommended):
+### 2. Set up virtual environment:
 ```bash
 python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
 ```
 
-### 3. Activate the virtual environment:
-- On Windows:
-  ```bash
-  venv\Scripts\activate
-  ```
-- On macOS/Linux:
-  ```bash
-  source venv/bin/activate
-  ```
-
-### 4. Install dependencies:
+### 3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Run the app:
-```bash
-streamlit run app.py
+### 4. Configure Secrets:
+Create `.streamlit/secrets.toml` with your Gemini API key (or set `GEMINI_API_KEY` in your environment):
+```toml
+[genai]
+api_key = "YOUR_GEMINI_API_KEY"
 ```
 
-This will start the Streamlit app and open it in your default web browser.
+> **Note**: Public portfolio content and FAQs are cleanly maintained in `data/personal_info.json` and `data/faqs.json`. You can easily edit those JSON files to update your profile or add questions without touching secrets!
 
-## Usage
-1. **Enter Your Query**: Type a question or query in the text box.
-2. **FAQ Matching**: If a match is found in the FAQs, a predefined answer is displayed.
-3. **AI-Generated Response**: For unmatched queries, the AI generates a response using the context provided.
-4. **Multi-Language Support**: Queries and responses are supported in the same language as detected.
-
-## Customization
-- **Updating FAQs**: Modify the configuration to add or update FAQs.
-- **Enhancing Context**: Adjust the data provided to improve the AI’s understanding of your domain.
-- **Adjusting AI Parameters**: Customize temperature, max tokens, or other generation settings in the `generate_answer` method of `TanvirAnzumAI`.
-
-## Dependencies
-This project uses the following Python libraries:
-- `streamlit`: Framework for creating web apps.
-- `requests`: For API and web requests.
-- `google.generativeai`: Google’s Generative AI API for generating answers.
-- `langdetect`: For detecting the language of user queries.
-- `toml`: For handling configuration data.
-- `difflib`: For matching user queries with FAQ questions.
-
-Install dependencies with:
+### 5. Run the application:
 ```bash
-pip install -r requirements.txt
+streamlit run aanzum.py
 ```
 
-## Troubleshooting
-- **FAQ Not Found**: Ensure the configuration file is correctly set up.
-- **API Key Issues**: Verify the API key used in the application.
-- **Language Mismatch**: The app may fail to detect certain languages if `langdetect` encounters ambiguous input.
-- **Gemini AI Issues**: Check your API limits and connection if no responses are generated.
+---
 
-## Demo
-Check out the live demo: [anzum.ai](https://anzum-ai.streamlit.app/?embed_options=dark_theme)
+## 🌐 Live Demo & Deployment
 
-## Repository
-Explore the codebase: [GitHub Repository](https://github.com/aanzum7/anzum.ai/tree/master)
+- **Live Application:** [anzum.ai](https://anzum-ai.streamlit.app/?embed_options=dark_theme)
+- **Deployment Ready:** Supports direct deployment to **Streamlit Community Cloud** (via Secrets settings) or **Heroku** (via `Procfile`).
 
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
+
+## 📄 License
+This project is licensed under the [MIT License](LICENSE).
