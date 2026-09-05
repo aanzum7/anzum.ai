@@ -553,8 +553,10 @@ header[data-testid="stHeader"] {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 8px;
-    margin-bottom: 12px;
+    margin-top: 10px;
+    margin-bottom: 0;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
     width: 100%;
 }
 
@@ -564,11 +566,11 @@ header[data-testid="stHeader"] {
     justify-content: center;
     text-align: center;
     gap: 6px;
-    padding: 8px 6px;
-    background: rgba(30, 41, 59, 0.45);
-    border: 1px solid var(--border-subtle);
+    padding: 7px 6px;
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
-    font-size: 0.76rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #E2E8F0;
     width: 100%;
@@ -578,18 +580,18 @@ header[data-testid="stHeader"] {
 
 .status-pill:hover {
     border-color: var(--border-accent);
-    background: rgba(99, 102, 241, 0.12);
+    background: rgba(99, 102, 241, 0.15);
     color: #FFFFFF;
     transform: translateY(-1px);
 }
 
-/* ─── Social & Professional Link Buttons ─── */
+/* ─── Social & Professional Link Buttons (Inside Get In Touch) ─── */
 .link-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-top: 10px;
-    margin-bottom: 14px;
+    margin-top: 8px;
+    margin-bottom: 0;
 }
 
 .link-btn {
@@ -598,8 +600,8 @@ header[data-testid="stHeader"] {
     justify-content: center;
     gap: 6px;
     padding: 8px 10px;
-    background: rgba(30, 41, 59, 0.6);
-    border: 1px solid var(--border-subtle);
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -611,6 +613,7 @@ header[data-testid="stHeader"] {
 .link-btn:hover {
     background: rgba(99, 102, 241, 0.2);
     border-color: var(--border-accent);
+    color: #FFFFFF !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
 }

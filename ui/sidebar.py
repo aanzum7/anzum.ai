@@ -54,7 +54,7 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_mod
 
         st.markdown("<hr style='margin: 10px 0 14px 0; border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 
-        # 🎯 Focused Current Status (Compact, high impact, no long paragraphs)
+        # 🎯 Focused Current Status & Key Badges (Unified Summary Card)
         st.markdown(
             """
             <div class="sidebar-current-card">
@@ -68,39 +68,23 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_mod
                     <div class="current-title">Werkstudent (Data / AI / BI)</div>
                     <div class="current-sub">Hamburg, Germany & Remote</div>
                 </div>
-            </div>
-            <div class="sidebar-pill-row">
-                <span class="status-pill">📍 Hamburg, DE</span>
-                <span class="status-pill">⚡ 5+ Yrs Exp</span>
-                <span class="status-pill">🤖 RecSys & ML</span>
-                <span class="status-pill">📊 BI & Analytics</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Professional Links Grid (LinkedIn and ResearchGate)
-        linkedin_url = prof_links.get("linkedin", "https://www.linkedin.com/in/aanzum/")
-        rg_url = prof_links.get("researchgate", "https://www.researchgate.net/profile/Tanvir-Anzum")
-
-        st.markdown(
-            f"""
-            <div class="link-grid">
-                <a href="{linkedin_url}" target="_blank" class="link-btn">
-                    <span>💼</span> LinkedIn
-                </a>
-                <a href="{rg_url}" target="_blank" class="link-btn">
-                    <span>🔬</span> ResearchGate
-                </a>
+                <div class="sidebar-pill-row">
+                    <span class="status-pill">📍 Hamburg, DE</span>
+                    <span class="status-pill">⚡ 5+ Yrs Exp</span>
+                    <span class="status-pill">🤖 RecSys & ML</span>
+                    <span class="status-pill">📊 BI & Analytics</span>
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Prominent Get In Touch Card (Email & Phone with icons - best way)
+        # Prominent Get In Touch Card (Email, Phone, LinkedIn & ResearchGate)
         email = contact.get("email", "tanviranzum70@gmail.com")
         phone = contact.get("phone", "+88-016-87153529")
         clean_phone = phone.replace("-", "").replace(" ", "")
+        linkedin_url = prof_links.get("linkedin", "https://www.linkedin.com/in/aanzum/")
+        rg_url = prof_links.get("researchgate", "https://www.researchgate.net/profile/Tanvir-Anzum")
 
         st.markdown(
             f"""
@@ -120,6 +104,14 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_mod
                         <span class="contact-val">{phone}</span>
                     </div>
                 </a>
+                <div class="link-grid">
+                    <a href="{linkedin_url}" target="_blank" class="link-btn">
+                        <span>💼</span> LinkedIn
+                    </a>
+                    <a href="{rg_url}" target="_blank" class="link-btn">
+                        <span>🔬</span> ResearchGate
+                    </a>
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
