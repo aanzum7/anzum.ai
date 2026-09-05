@@ -193,6 +193,27 @@ header[data-testid="stHeader"] {
     box-shadow: 0 2px 10px rgba(99, 102, 241, 0.2) !important;
 }
 
+/* ─── Nested Interactive Subtabs Refinement ─── */
+.stTabs .stTabs [data-baseweb="tab-list"] {
+    background-color: rgba(15, 23, 42, 0.55) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-bottom: 16px;
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.stTabs .stTabs [data-baseweb="tab"] {
+    font-size: 0.88rem !important;
+    padding: 6px 14px !important;
+    border-radius: 8px !important;
+}
+
+.stTabs .stTabs [aria-selected="true"] {
+    background: rgba(99, 102, 241, 0.2) !important;
+    border-color: rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15) !important;
+}
+
 /* ─── FAQ Tab Card & Contact Links ─── */
 .faq-tab-card {
     background: rgba(19, 28, 46, 0.55);
@@ -249,6 +270,85 @@ header[data-testid="stHeader"] {
     border-color: var(--border-glow);
     color: #FFFFFF !important;
     transform: translateY(-1px);
+}
+
+/* ─── Prominent Sidebar Contact Card (Email & Phone) ─── */
+.sidebar-contact-card {
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    margin-bottom: 12px;
+}
+
+.contact-card-header {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #A5B4FC;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.contact-item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    text-decoration: none !important;
+    margin-bottom: 6px;
+    transition: all 0.2s ease;
+}
+
+.contact-item-row:last-child {
+    margin-bottom: 0;
+}
+
+.contact-item-row:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.12);
+    transform: translateX(2px);
+}
+
+.contact-icon {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.contact-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.contact-label {
+    font-size: 0.68rem;
+    color: #94A3B8;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.contact-val {
+    font-size: 0.82rem;
+    color: #F1F5F9;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ─── Suggestion / Quick Prompt Chips ─── */
@@ -400,6 +500,74 @@ header[data-testid="stHeader"] {
     font-size: 0.85rem;
     color: #CBD5E1;
     line-height: 1.5;
+}
+
+/* ─── Focused Sidebar Current Status & Micro-Pills ─── */
+.sidebar-current-card {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.04) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+
+.current-item {
+    margin-bottom: 8px;
+}
+.current-item:last-child {
+    margin-bottom: 0;
+}
+
+.current-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    background: rgba(99, 102, 241, 0.2);
+    color: #A5B4FC;
+    margin-bottom: 3px;
+}
+
+.current-badge.seeking {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34D399;
+}
+
+.current-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    line-height: 1.3;
+}
+
+.current-sub {
+    font-size: 0.75rem;
+    color: #94A3B8;
+    margin-top: 1px;
+}
+
+.sidebar-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 12px;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #CBD5E1;
 }
 
 /* ─── Social & Professional Link Buttons ─── */

@@ -23,7 +23,38 @@ APP_ICON = str(AVATAR_PATH) if AVATAR_PATH.exists() else "🤖"
 AUTHOR = "Tanvir Anzum"
 
 # AI Service Defaults (Tuned for short, punchy, high-impact answers)
-DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+
+# Comprehensive pool of all Gemini text-to-text models for automatic quota failover
+GEMINI_FALLBACK_MODELS: List[str] = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3-flash-preview",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+    "gemini-flash-latest",
+    "gemini-flash-lite-latest",
+    "gemini-3.1-pro-preview",
+    "gemini-pro-latest",
+    "gemini-2.5-pro",
+]
+
+# Cooldown duration (seconds) before retrying a model that hit quota limits
+MODEL_QUOTA_COOLDOWN_SECONDS = 600
+
+# Rate Limiting & Abuse Prevention (Single chat / device protection)
+MIN_REQUEST_INTERVAL_SECONDS = 2.0   # 2-second debounce between rapid queries
+MAX_REQUESTS_PER_MINUTE = 6          # Max 6 queries per rolling minute
+MAX_SESSION_REQUESTS = 40            # Max 40 queries per session
+
+# Semantic & Similar Asking Cache Settings
+CACHE_SIMILARITY_THRESHOLD = 0.65    # Score above which similar query uses cache
+CACHE_MAX_ENTRIES = 300              # Maximum LRU cache capacity
+
 GENERATION_CONFIG = {
     "temperature": 0.5,
     "top_p": 0.90,

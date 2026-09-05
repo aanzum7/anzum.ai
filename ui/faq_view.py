@@ -8,27 +8,28 @@ import streamlit as st
 
 def render_faq_multitabs(faq_data: List[Dict], personal_context: Optional[Dict] = None):
     """
-    Render high-polish multitab FAQ section with short, punchy cards
-    and a prominent '📬 Get In Touch' tab.
+    Render clean, informative FAQ cards.
+    Provides concise, verified answers for quick reference without AI redirection
+    or duplicate contact information (contact is prominent in the sidebar).
     """
     if not faq_data:
+        st.info("No FAQs currently available.")
         return
 
     faq_map = {f.get("category", ""): f for f in faq_data}
 
-    # Tab titles
-    tabs = st.tabs([
+    # Clean subtabs for the core FAQ categories (Get in touch removed as requested)
+    subtabs = st.tabs([
         "🎓 Role & TUHH",
         "💼 Experience",
-        "⚡ Skills",
-        "🔬 Research",
-        "📬 Get In Touch",
+        "⚡ Skills & Stack",
+        "🔬 Education & Research",
     ])
 
-    # 1. Role & TUHH Tab
-    with tabs[0]:
+    # ── 1. Role & TUHH ──
+    with subtabs[0]:
         q_obj = faq_map.get("Role", {})
-        q = q_obj.get("question", "What is your background and what opportunities are you seeking?")
+        q = q_obj.get("question", "What is your current background and what opportunities are you seeking?")
         a = q_obj.get(
             "answer",
             "Incoming Master's student at Hamburg University of Technology (TUHH) with 5 years in data analytics & applied ML. Actively seeking a Werkstudent opportunity in Data Analytics, BI, Data Engineering, or Applied AI in Hamburg."
@@ -37,21 +38,23 @@ def render_faq_multitabs(faq_data: List[Dict], personal_context: Optional[Dict] 
             f"""
             <div class="faq-tab-card">
                 <div class="faq-tab-title">
-                    <span>🎓</span> Incoming Master's at TUHH (Hamburg, Germany)
+                    <span>🎓</span> {q}
                 </div>
                 <div class="faq-tab-desc">
                     {a}
+                </div>
+                <div class="contact-link-row">
+                    <span class="contact-link-tag">📍 Hamburg, Germany</span>
+                    <span class="contact-link-tag">🎯 M.Sc. Info & Comm Systems @ TUHH</span>
+                    <span class="contact-link-tag">🔍 Seeking Werkstudent</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("💬 Ask AI about TUHH & Goals", key="tab_btn_role", use_container_width=True):
-            st.session_state["queued_prompt"] = q
-            st.rerun()
 
-    # 2. Experience Tab
-    with tabs[1]:
+    # ── 2. Experience ──
+    with subtabs[1]:
         q_obj = faq_map.get("Experience", {})
         q = q_obj.get("question", "What did you achieve at Prothom Alo and Brain Station 23?")
         a = q_obj.get(
@@ -62,21 +65,23 @@ def render_faq_multitabs(faq_data: List[Dict], personal_context: Optional[Dict] 
             f"""
             <div class="faq-tab-card">
                 <div class="faq-tab-title">
-                    <span>💼</span> Brain Station 23 & Prothom Alo Achievements
+                    <span>💼</span> {q}
                 </div>
                 <div class="faq-tab-desc">
                     {a}
+                </div>
+                <div class="contact-link-row">
+                    <span class="contact-link-tag">🚀 20M+ Readers Impact</span>
+                    <span class="contact-link-tag">⚡ 90m ➔ 10m Runtime</span>
+                    <span class="contact-link-tag">🤖 Word2Vec & Collaborative Filtering</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("💬 Ask AI about Experience", key="tab_btn_exp", use_container_width=True):
-            st.session_state["queued_prompt"] = q
-            st.rerun()
 
-    # 3. Skills Tab
-    with tabs[2]:
+    # ── 3. Skills & Stack ──
+    with subtabs[2]:
         q_obj = faq_map.get("Expertise", {})
         q = q_obj.get("question", "What are your core technical skills and tools?")
         a = q_obj.get(
@@ -87,21 +92,24 @@ def render_faq_multitabs(faq_data: List[Dict], personal_context: Optional[Dict] 
             f"""
             <div class="faq-tab-card">
                 <div class="faq-tab-title">
-                    <span>⚡</span> Core Technical Skills & Tools
+                    <span>⚡</span> {q}
                 </div>
                 <div class="faq-tab-desc">
                     {a}
+                </div>
+                <div class="contact-link-row">
+                    <span class="contact-link-tag">🐍 Python & SQL</span>
+                    <span class="contact-link-tag">📊 Streamlit & Looker</span>
+                    <span class="contact-link-tag">🧠 Gemini & RecSys</span>
+                    <span class="contact-link-tag">📈 GA4 & BigQuery</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("💬 Ask AI about Tech Stack", key="tab_btn_skills", use_container_width=True):
-            st.session_state["queued_prompt"] = q
-            st.rerun()
 
-    # 4. Research Tab
-    with tabs[3]:
+    # ── 4. Education & Research ──
+    with subtabs[3]:
         q_obj = faq_map.get("Education", {})
         q = q_obj.get("question", "What is your educational background and research publications?")
         a = q_obj.get(
@@ -112,48 +120,17 @@ def render_faq_multitabs(faq_data: List[Dict], personal_context: Optional[Dict] 
             f"""
             <div class="faq-tab-card">
                 <div class="faq-tab-title">
-                    <span>🔬</span> Academic Path & Publications
+                    <span>🔬</span> {q}
                 </div>
                 <div class="faq-tab-desc">
                     {a}
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("💬 Ask AI about Research", key="tab_btn_edu", use_container_width=True):
-            st.session_state["queued_prompt"] = q
-            st.rerun()
-
-    # 5. 📬 Get In Touch Tab
-    with tabs[4]:
-        st.markdown(
-            """
-            <div class="faq-tab-card">
-                <div class="faq-tab-title">
-                    <span>📬</span> Get In Touch & Let's Connect
-                </div>
-                <div class="faq-tab-desc">
-                    Open for <strong>Werkstudent roles in Hamburg</strong>, data analytics collaborations, and AI discussions worldwide.
-                </div>
                 <div class="contact-link-row">
-                    <a href="mailto:tanviranzum70@gmail.com" class="contact-link-tag">
-                        <span>📧</span> tanviranzum70@gmail.com
-                    </a>
-                    <a href="https://www.linkedin.com/in/aanzum/" target="_blank" class="contact-link-tag">
-                        <span>💼</span> LinkedIn
-                    </a>
-                    <a href="https://sites.google.com/view/anzum7/career-highlights" target="_blank" class="contact-link-tag">
-                        <span>🌐</span> Highlights
-                    </a>
-                    <span class="contact-link-tag">
-                        <span>📍</span> Hamburg, Germany
-                    </span>
+                    <span class="contact-link-tag">🎓 TUHH M.Sc. Student</span>
+                    <span class="contact-link-tag">🔬 ResearchGate Verified</span>
+                    <span class="contact-link-tag">📜 Traffic Sign & Fraud ML Papers</span>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("💬 Say Hello to Tanvir via AI Chat", key="tab_btn_contact", use_container_width=True):
-            st.session_state["queued_prompt"] = "Hi Tanvir! I'd love to connect regarding opportunities in Hamburg."
-            st.rerun()
