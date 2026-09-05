@@ -550,24 +550,37 @@ header[data-testid="stHeader"] {
 }
 
 .sidebar-pill-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
     margin-bottom: 12px;
+    width: 100%;
 }
 
 .status-pill {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    font-size: 0.72rem;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    padding: 8px 6px;
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 0.76rem;
     font-weight: 600;
-    color: #CBD5E1;
+    color: #E2E8F0;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.status-pill:hover {
+    border-color: var(--border-accent);
+    background: rgba(99, 102, 241, 0.12);
+    color: #FFFFFF;
+    transform: translateY(-1px);
 }
 
 /* ─── Social & Professional Link Buttons ─── */
@@ -661,12 +674,12 @@ header[data-testid="stHeader"] {
     box-shadow: var(--shadow-md), 0 0 20px rgba(99, 102, 241, 0.3) !important;
 }
 
-/* ─── Buttons Polishing ─── */
+/* ─── Buttons Polishing & Uniform Grid Sizing ─── */
 .stButton > button {
     border-radius: 10px !important;
     font-family: var(--font-heading) !important;
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
+    font-size: 0.88rem !important;
     letter-spacing: 0.01em !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
@@ -674,6 +687,45 @@ header[data-testid="stHeader"] {
 .stButton > button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Ensure all horizontal columns (e.g. Quick Questions chips, action buttons) have equal height matching the largest */
+div[data-testid="stHorizontalBlock"] {
+    align-items: stretch !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] .stButton {
+    height: 100% !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+}
+
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"] .stButton > button {
+    min-height: 52px !important;
+    height: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 8px 10px !important;
+    font-size: 0.86rem !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    word-break: normal !important;
 }
 
 /* ─── Scrollbars ─── */

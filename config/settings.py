@@ -78,9 +78,9 @@ FAQ_CATEGORY_ORDER: List[str] = [
 ]
 
 SUGGESTION_CHIPS: List[Tuple[str, str]] = [
-    ("🎯 TUHH & Background", "What is your current background and what opportunities are you seeking?"),
-    ("🚀 Recommendation Engines", "What did you achieve at Prothom Alo and Brain Station 23?"),
-    ("⚡ Tech Stack & Skills", "What are your core technical skills and tools?"),
-    ("🎓 Education & Research", "What is your educational background and research publications?"),
-    ("🤝 Connect in Hamburg", "How can I connect with Tanvir in Hamburg or globally?"),
+    ("🎯 Background & TUHH", "What is your current background and what opportunities are you seeking?"),
+    ("🚀 RecSys & AI Work", "What did you achieve at Prothom Alo and Brain Station 23?"),
+    ("⚡ Tech Stack & Tools", "What are your core technical skills and tools?"),
+    ("🔬 Research & Papers", "What is your educational background and research publications?"),
+    ("🤝 Connect & Hire", "How can I connect with Tanvir in Hamburg or globally?"),
 ]

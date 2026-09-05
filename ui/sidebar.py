@@ -73,17 +73,15 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_mod
                 <span class="status-pill">📍 Hamburg, DE</span>
                 <span class="status-pill">⚡ 5+ Yrs Exp</span>
                 <span class="status-pill">🤖 RecSys & ML</span>
+                <span class="status-pill">📊 BI & Analytics</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Professional Links Grid
+        # Professional Links Grid (LinkedIn and ResearchGate)
         linkedin_url = prof_links.get("linkedin", "https://www.linkedin.com/in/aanzum/")
-        github_url = prof_links.get("github", "https://github.com/aanzum7")
         rg_url = prof_links.get("researchgate", "https://www.researchgate.net/profile/Tanvir-Anzum")
-        streamlit_url = prof_links.get("streamlit", "https://share.streamlit.io/user/aanzum7")
-        portfolio_url = social_links.get("personal_site", "https://sites.google.com/view/anzum7")
 
         st.markdown(
             f"""
@@ -91,14 +89,8 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_mod
                 <a href="{linkedin_url}" target="_blank" class="link-btn">
                     <span>💼</span> LinkedIn
                 </a>
-                <a href="{github_url}" target="_blank" class="link-btn">
-                    <span>💻</span> GitHub
-                </a>
                 <a href="{rg_url}" target="_blank" class="link-btn">
-                    <span>🔬</span> Research
-                </a>
-                <a href="{streamlit_url}" target="_blank" class="link-btn">
-                    <span>⚡</span> Apps
+                    <span>🔬</span> ResearchGate
                 </a>
             </div>
             """,
