@@ -10,6 +10,7 @@ from services.config import load_configuration, ConfigError
 from services.logger import get_logger
 from services.agentic_ai import AgenticAI
 from services.faq import FAQHandler
+from services.mcp_server import create_mcp_server
 from ui.styles import inject_styles
 from ui.sidebar import render_sidebar
 from ui.faq_view import render_faq_multitabs
@@ -21,20 +22,22 @@ def build_app():
     """Create and wire up app dependencies with session persistence."""
     faq_data, personal_context, api_key = load_configuration()
     faq_handler = FAQHandler(faq_data)
+    mcp_server = create_mcp_server(personal_context=personal_context, faq_data=faq_data)
 
     # Cache agent instance in session_state to preserve multi-turn conversation memory
     if "agent" not in st.session_state:
         st.session_state.agent = AgenticAI(
             api_key=api_key,
-            context={"faq": faq_data, "personal": personal_context}
+            context={"faq": faq_data, "personal": personal_context},
+            mcp_server=mcp_server,
         )
 
     return faq_handler, st.session_state.agent, faq_data, personal_context
 
-def render_hero_banner():
+def render_hero_banner(model_label: str = "Gemini Multi-Model"):
     """Render compact, modern glassmorphism hero banner."""
     st.markdown(
-        """
+        f"""
         <div class="hero-container" style="padding: 22px 28px; margin-bottom: 18px;">
             <div class="hero-title-row">
                 <div class="hero-title" style="font-size: 2.1rem;">
@@ -42,14 +45,13 @@ def render_hero_banner():
                     <span class="brand-gradient">anzum.ai</span>
                     <span style="font-size: 1.6rem;">⚡</span>
                 </div>
-                <div class="hero-badge-pill">
+                <div class="hero-badge-pill" title="MCP Knowledge Server & Multi-Model Failover Active">
                     <span class="pulse-dot"></span>
-                    <span>AI Twin • Gemini 2.5 Flash</span>
+                    <span>AI Twin • {model_label} • MCP Agent</span>
                 </div>
             </div>
-            <p class="hero-desc" style="font-size: 0.98rem; margin-top: 8px;">
-                Ask me anything about my 5 years in data analytics, recommendation engines at <strong>Prothom Alo</strong> & <strong>Brain Station 23</strong>,
-                or my upcoming Master's journey and Werkstudent search at <strong>TUHH in Hamburg</strong>.
+            <p class="hero-desc" style="font-size: 0.98rem; margin-top: 8px; line-height: 1.6;">
+                Incoming <strong>M.Sc. Student at TUHH (Hamburg)</strong> actively seeking a <strong>Werkstudent position</strong> in Data Analytics & Applied AI — backed by 5+ years building production recommendation engines at <strong>Prothom Alo</strong> & <strong>Brain Station 23</strong>.
             </p>
         </div>
         """,
@@ -79,16 +81,22 @@ def main():
         st.stop()
 
     # Dynamic Sidebar (Profile avatar, roles, social links)
-    render_sidebar(personal_context=personal_context)
+    render_sidebar(personal_context=personal_context, active_model_label=agent.active_model_label)
 
     # Hero Banner
-    render_hero_banner()
+    render_hero_banner(model_label=agent.active_model_label)
 
-    # Multitabs FAQ & Quick Get In Touch
-    render_faq_multitabs(faq_data=faq_data, personal_context=personal_context)
+    # Main App Navigation: Dedicated Chat Tab & Interactive FAQ Subtabs
+    tab_chat, tab_faq = st.tabs([
+        "✨ AI Twin Chat",
+        "📖 FAQ",
+    ])
 
-    # Main Chatbot Experience (The Star of the App)
-    render_chat(faq_handler=faq_handler, agent=agent)
+    with tab_chat:
+        render_chat(agent=agent)
+
+    with tab_faq:
+        render_faq_multitabs(faq_data=faq_data, personal_context=personal_context)
 
 if __name__ == "__main__":
     try:

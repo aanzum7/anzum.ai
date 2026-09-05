@@ -21,7 +21,7 @@ def _get_image_base64(filepath) -> Optional[str]:
             return None
     return None
 
-def render_sidebar(personal_context: Optional[Dict[str, Any]] = None):
+def render_sidebar(personal_context: Optional[Dict[str, Any]] = None, active_model_label: Optional[str] = None):
     """Render high-polish profile sidebar with dynamic context and link buttons."""
     data = personal_context or {}
     avatar_b64 = _get_image_base64(AVATAR_PATH)
@@ -52,34 +52,33 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None):
             unsafe_allow_html=True,
         )
 
-        st.markdown("---")
+        st.markdown("<hr style='margin: 10px 0 14px 0; border-color: rgba(255,255,255,0.08);'>", unsafe_allow_html=True)
 
-        # Current Role Card
+        # 🎯 Focused Current Status (Compact, high impact, no long paragraphs)
         st.markdown(
-            f"""
-            <div class="sidebar-card">
-                <div class="sidebar-card-title">💼 Current Focus</div>
-                <div class="sidebar-card-body">{current_role}</div>
+            """
+            <div class="sidebar-current-card">
+                <div class="current-item">
+                    <span class="current-badge">🎓 Current</span>
+                    <div class="current-title">M.Sc. Student @ TUHH</div>
+                    <div class="current-sub">Hamburg University of Technology</div>
+                </div>
+                <div class="current-item">
+                    <span class="current-badge seeking">🔍 Seeking</span>
+                    <div class="current-title">Werkstudent (Data / AI / BI)</div>
+                    <div class="current-sub">Hamburg, Germany & Remote</div>
+                </div>
+            </div>
+            <div class="sidebar-pill-row">
+                <span class="status-pill">📍 Hamburg, DE</span>
+                <span class="status-pill">⚡ 5+ Yrs Exp</span>
+                <span class="status-pill">🤖 RecSys & ML</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Education Summary (if present)
-        if education:
-            st.markdown(
-                f"""
-                <div class="sidebar-card">
-                    <div class="sidebar-card-title">🎓 Education</div>
-                    <div class="sidebar-card-body">{education}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
         # Professional Links Grid
-        st.markdown("<div class='sidebar-card-title' style='margin-top: 14px;'>🌐 Professional Links</div>", unsafe_allow_html=True)
-        
         linkedin_url = prof_links.get("linkedin", "https://www.linkedin.com/in/aanzum/")
         github_url = prof_links.get("github", "https://github.com/aanzum7")
         rg_url = prof_links.get("researchgate", "https://www.researchgate.net/profile/Tanvir-Anzum")
@@ -106,24 +105,39 @@ def render_sidebar(personal_context: Optional[Dict[str, Any]] = None):
             unsafe_allow_html=True,
         )
 
-        # Direct Contact Expander
-        with st.expander("📬 Get In Touch"):
-            email = contact.get("email", "tanviranzum70@gmail.com")
-            edu_email = contact.get("edu_email", "")
-            phone = contact.get("phone", "")
-
-            st.markdown(f"**Email:** [{email}](mailto:{email})")
-            if edu_email:
-                st.markdown(f"**Academic:** [{edu_email}](mailto:{edu_email})")
-            if phone:
-                st.markdown(f"**Phone:** `{phone}`")
-            if portfolio_url:
-                st.markdown(f"**Portfolio:** [anzum7 Website]({portfolio_url})")
+        # Prominent Get In Touch Card (Email & Phone with icons - best way)
+        email = contact.get("email", "tanviranzum70@gmail.com")
+        phone = contact.get("phone", "+88-016-87153529")
+        clean_phone = phone.replace("-", "").replace(" ", "")
 
         st.markdown(
             f"""
-            <div style='text-align: center; margin-top: 24px; font-size: 0.75rem; color: #64748B;'>
-                anzum.ai v{APP_VERSION} • Powered by Gemini 2.5 Flash
+            <div class="sidebar-contact-card">
+                <div class="contact-card-header">📬 Get In Touch</div>
+                <a href="mailto:{email}" class="contact-item-row" title="Send direct email">
+                    <span class="contact-icon">📧</span>
+                    <div class="contact-details">
+                        <span class="contact-label">Email</span>
+                        <span class="contact-val">{email}</span>
+                    </div>
+                </a>
+                <a href="tel:{clean_phone}" class="contact-item-row" title="Call or WhatsApp">
+                    <span class="contact-icon">📱</span>
+                    <div class="contact-details">
+                        <span class="contact-label">Phone</span>
+                        <span class="contact-val">{phone}</span>
+                    </div>
+                </a>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        model_display = active_model_label or "Gemini Multi-Model"
+        st.markdown(
+            f"""
+            <div style='text-align: center; margin-top: 18px; font-size: 0.72rem; color: #64748B;'>
+                anzum.ai v{APP_VERSION} • {model_display}
             </div>
             """,
             unsafe_allow_html=True,
